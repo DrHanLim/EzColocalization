@@ -17,6 +17,7 @@ To use the EzColocalization plugin, select it from the "Plugins" menu on ImageJ.
 Version: Mars.2 Release (4.5.2)
 Build id: 20160218-0600
 * [ImageJ 1.50e](https://imagej.nih.gov/ij/)
+* Tutorial on how to develop ImageJ plugins in Eclipse can be found [here](http://imagejdocu.tudor.lu/doku.php?id=howto:plugins:the_imagej_eclipse_howto)
 
 ## Common issues
 * Images used in the plugin cannot be in the RGB format, and must be monochromatic. 
