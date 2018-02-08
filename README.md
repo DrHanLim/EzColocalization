@@ -28,7 +28,7 @@ Build id: 20160218-0600
 In the interest of making the code interpretable and thus modifiable, the code within EzColocalization is organized as modularly as possible. The code is organized into packages of classes with related functions. A more detailed description of these classes and their functions is proved in the supplementary material of the EzColocalization publication.
 
 ## Versioning
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/DrHanLim/EzColocalization/releases/tag/). 
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/DrHanLim/EzColocalization/tags). 
 
 ## Authors
 * **Weston Staufer** - *Initial work*
