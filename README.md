@@ -32,9 +32,9 @@ In the interest of making the code interpretable and thus modifiable, the code w
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/DrHanLim/EzColocalization/tags). 
 
 ## Authors
-* **Weston Staufer** - *Initial work*
+* **Weston Staufer** - *Initial work* - [westonstauffer](https://github.com/westonstauffer)
 * **Huanjie Sheng** - *Initial work* - [david190810](https://github.com/david190810)
-* **Han N. Lim** - *Project design* - [PurpleBooth](https://github.com/DrHanLim)
+* **Han N. Lim** - *Project design* - [DrHanLim](https://github.com/DrHanLim)
 
 ## License
 <EzColocalization, An ImageJ plugin for visualizing and measuring colocalization in cells and organisms.>
