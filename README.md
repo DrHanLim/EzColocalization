@@ -4,7 +4,7 @@
 EzColocalization is an open source ImageJ plugin developed to assist in colocalization studies. To allow for its use with as many data types as possible, the program takes a variety of inputs. Details of the possible inputs are available in the EzColocalization publication, but briefly, monochromatic images can be used as reporters, and ROI manager lists, binary masks, and light microscopy images can be used as to identify areas for analysis. This allows images or hand drawn regions for identification of areas to be analyzed. Outputs include everything necessary to visualize data, to decide upon appropriate analysis, to analyze data, and to analyze populations within experiments. EzColocalization is meant to simplify colocalization analysis for experimentalists, however EzColocalization can also be simply be used to identify cells with particular characteristics, align images, analyze colocalization in whole images, and analyze average signal of cells.
 
 ## Prerequisites
-[ImageJ](http://imagej.nih.gov/ij/download.html) (or [Fiji](https://fiji.sc/)) must be installed to use the plugin. This download can be found online on . 
+[ImageJ](http://imagej.nih.gov/ij/download.html) (or [Fiji](https://fiji.sc/)) must be installed to use the plugin. 
 
 ## Install
 On the ImageJ menu bar select "Plugins">"Install..." and select the EzColocalization plugin file (.jar format). The EzColocalization plugin will now be selectable in the "Plugins" menu. Alternatively, the .jar file version of the plugin can be moved to the "plugins" folder found in the ImageJ folder, and ImageJ must be reopened. Finally, the source code and .jar file of EzColocalization plugin can also be downloaded from GitHub.
@@ -32,7 +32,7 @@ In the interest of making the code interpretable and thus modifiable, the code w
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/DrHanLim/EzColocalization/tags). 
 
 ## Authors
-* **Weston Staufer** - *Initial work*
+* **Weston Staufer** - *Initial work* - [westonstauffer](https://github.com/westonstauffer)
 * **Huanjie Sheng** - *Initial work* - [david190810](https://github.com/david190810)
 * **Han N. Lim** - *Project design* - [PurpleBooth](https://github.com/DrHanLim)
 
