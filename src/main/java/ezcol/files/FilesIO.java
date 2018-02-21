@@ -42,7 +42,7 @@ public class FilesIO {
 
 	public static URL getResource(String name) {
 		if (name.charAt(0) != '/')
-			name = "/" + name;
+			name = "/" + IMAGE_DIRECTORY + name;
 		return FilesIO.class.getResource(name);
 	}
 
@@ -89,7 +89,6 @@ public class FilesIO {
 		}
 		for (String str : strs) {
 			if (isExtension(str, "tif")) {
-				System.out.println(str + " is Tiff");
 				getImagePlus("/" + IMAGE_DIRECTORY + str, show);
 			}
 		}
