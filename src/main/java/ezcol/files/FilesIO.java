@@ -41,11 +41,14 @@ public class FilesIO {
 	private static final String IMAGE_DIRECTORY = "images/";
 
 	public static URL getResource(String name) {
-		return FilesIO.class.getResource("/" + name);
+		if (name.charAt(0) != '/')
+			name = "/" + name;
+		return FilesIO.class.getResource(name);
 	}
 
 	/**
-	 * @param path the relative path of the file starting with '/'
+	 * @param path
+	 *            the relative path of the file starting with '/'
 	 * @param show
 	 * @return
 	 * @throws IOException
@@ -53,21 +56,23 @@ public class FilesIO {
 	 * @see https://imagej.nih.gov/ij/plugins/download/JAR_Resources_Demo.java
 	 */
 	public static ImagePlus getImagePlus(String path, boolean show) throws IOException, URISyntaxException {
-		/*URL url = FilesIO.class.getResource("/" + IMAGE_DIRECTORY + name);
-		if (url == null){
-			return null;
-		}*/
-		String name = path.substring(path.lastIndexOf('/'));
+		/*
+		 * URL url = FilesIO.class.getResource("/" + IMAGE_DIRECTORY + name); if
+		 * (url == null){ return null; }
+		 */
+		String name = path;
+		if (path.lastIndexOf('/') != -1)
+			name = path.substring(path.lastIndexOf('/') + 1);
 		ImagePlus imp = null;
 		InputStream is = FilesIO.class.getResourceAsStream(path);
-
+		System.out.println(name);
 		if (is != null) {
 			Opener opener = new Opener();
 			imp = opener.openTiff(is, name);
 			if (imp != null && show)
 				imp.show();
 			return imp;
-		}else{
+		} else {
 			throw new IOException("Cannot locate " + path);
 		}
 	}
