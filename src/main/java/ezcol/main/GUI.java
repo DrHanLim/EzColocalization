@@ -1189,8 +1189,8 @@ public class GUI extends PluginStatic
 
 				paneMatrixSpinners[iFT] = new JPanel();
 
-				JLabel ftLabel = new JLabel("Ch." + (iFT + 1) + " ");
-				ftLabel.setToolTipText("Selected fraction percentage for channel" + (iFT + 1));
+				JLabel ftLabel = new JLabel("FT (Ch." + (iFT + 1) + ") ");
+				ftLabel.setToolTipText("Selected fraction percentage (FT) for channel" + (iFT + 1));
 				/*
 				 * GridBagConstraints gbc_label_ft = new GridBagConstraints();
 				 * gbc_label_ft.gridwidth = 1; gbc_label_ft.insets = new
@@ -2767,10 +2767,12 @@ public class GUI extends PluginStatic
 				StringCompiler testCode = new StringCompiler();
 				try {
 
-					if (testCode.compile(customCode_text))
+					if (testCode.compileCustom(customCode_text))
 						setCustomStatus(SUCCESS);
-					else
+					else{
 						setCustomStatus(FAILURE);
+						ExceptionHandler.print2log(true);
+					}
 
 				} catch (Exception e1) {
 					// TODO Auto-generated catch block
