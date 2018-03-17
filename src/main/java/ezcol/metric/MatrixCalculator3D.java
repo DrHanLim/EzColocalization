@@ -247,6 +247,7 @@ public class MatrixCalculator3D extends BasicCalculator {
 		case SHOW_SRC:
 			return getColorValues(-1, 1, num);
 		case SHOW_ICQ:
+			return getColorValues(-0.5, 0.5, num);
 		case SHOW_M1:
 		case SHOW_M2:
 		case SHOW_M3:
@@ -259,7 +260,7 @@ public class MatrixCalculator3D extends BasicCalculator {
 	/**
 	 * over for metric heat map use
 	 */
-	public double[] getMetricRange(int index) {
+	public float[] getMetricRange(int index) {
 		if (index < 0 || index >= METRIC_NAMES.length)
 			return null;
 
@@ -268,12 +269,13 @@ public class MatrixCalculator3D extends BasicCalculator {
 		case SHOW_TOS_LOG2:
 		case SHOW_PCC:
 		case SHOW_SRC:
-			return new double[] { -1, 0, 1 };
+			return new float[] { -1.0f, 0.0f, 1.0f };
 		case SHOW_ICQ:
+			return new float[] {-0.5f, 0.0f, 0.5f };
 		case SHOW_M1:
 		case SHOW_M2:
 		case SHOW_M3:
-			return new double[] { 0, 0.5, 1 };
+			return new float[] { 0.0f, 0.5f, 1.0f };
 		default:
 			return null;
 		}
@@ -474,7 +476,7 @@ public class MatrixCalculator3D extends BasicCalculator {
 	}
 
 	public ImageWindow getD3Heatmap(double[] synValues, int[] dimensions) {
-		float[] customScales = { -1, 0.0f, 1 };
+		float[] customScales = getMetricRange(metricIdx);
 		Color[] colorScales = { Color.BLUE, Color.WHITE, Color.RED };
 
 		int numBox = getMatrixSize(dimensions);

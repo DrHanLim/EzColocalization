@@ -227,7 +227,7 @@ public class MatrixCalculator extends BasicCalculator {
 		case SHOW_SRC:
 			return getColorValues(-1, 1, num);
 		case SHOW_ICQ:
-			return getColorValues(0, 1, num);
+			return getColorValues(-0.5, 0.5, num);
 		case SHOW_MCC:
 		case SHOW_M1:
 		case SHOW_M2:
@@ -256,7 +256,7 @@ public class MatrixCalculator extends BasicCalculator {
 		case SHOW_SRC:
 			return new double[] { -1, 0, 1 };
 		case SHOW_ICQ:
-			return new double[] { 0, 0.5, 1 };
+			return new double[] {-0.5, 0, 0.5 };
 		case SHOW_MCC:
 		case SHOW_M1:
 		case SHOW_M2:
