@@ -1075,7 +1075,7 @@ public class AnalysisOperator extends PluginStatic {
 		if (!IJ.isMacro() && (options & DO_CUSTOM) != 0) {
 			customCompiler = new StringCompiler();
 			try {
-				if (customCompiler.compile(customCode_text)) {
+				if (customCompiler.compileCustom(customCode_text)) {
 					gui.setCustomStatus(GUI.SUCCESS);
 				} else {
 					gui.setCustomStatus(GUI.FAILURE);
@@ -1268,8 +1268,9 @@ public class AnalysisOperator extends PluginStatic {
 				return 1;
 		}
 
-		if ((options & RQD_CELLID) != 0)
+		if ((options & RQD_CELLID) != 0 || (((options & RUN_IDCELLS) != 0) && (imps[imps.length-1] != null))){
 			type |= (1 << (MAX_NCHANNELS - 1));
+		}
 
 		if ((options & RUN_HEAT) != 0) {
 			for (int iHeat = 0; iHeat < heatmap_chckes.length; iHeat++)
