@@ -65,7 +65,6 @@ public class FilesIO {
 			name = path.substring(path.lastIndexOf('/') + 1);
 		ImagePlus imp = null;
 		InputStream is = FilesIO.class.getResourceAsStream(path);
-		System.out.println(name);
 		if (is != null) {
 			Opener opener = new Opener();
 			imp = opener.openTiff(is, name);
