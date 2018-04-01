@@ -189,7 +189,8 @@ public class CostesThreshold {
 			}
 			covariance=n*ABsum-Asum*Bsum;
 			squarePCC=covariance*covariance/((n*A2sum-Asum*Asum)*(n*B2sum-Bsum*Bsum));
-			squarePCC=covariance>0 ? squarePCC : (-squarePCC);
+			//This line is commented out so that the minimum absolute value of PCC will be selected
+			//squarePCC=covariance>0 ? squarePCC : (-squarePCC);
 			if(squarePCC<PCC){
 				CostesIdx=i;
 				PCC=squarePCC;
