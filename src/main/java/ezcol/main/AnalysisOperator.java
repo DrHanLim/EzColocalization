@@ -329,7 +329,6 @@ public class AnalysisOperator extends PluginStatic {
 			tempCellTable = impCells.getOutputTable(true);
 		}
 
-		// new ImagePlus("Channel0,Frame:"+iFrame,newip[1]).show();
 		// heatmap module
 		if ((options & RUN_HEAT) != 0) {
 			RoiManager tempRoi = null;
@@ -376,14 +375,6 @@ public class AnalysisOperator extends PluginStatic {
 			for (int i = 0; i < newips.length; i++)
 				if (newips[i] != null && imps[i] != null)
 					newips[i].setCalibrationTable(imps[i].getStack().getProcessor(iFrame).getCalibrationTable());
-
-			// this is a temporary solution
-			/*
-			 * ImageProcessor[] d3ip; if((options&RUN_D3TOS)==0) d3ip = newips;
-			 * else{ d3ip = new ImageProcessor[impd3TOS.length-1]; for(int
-			 * i=0;i<newips.length;i++) d3ip[i]=newips[i];
-			 * d3ip[d3ip.length-1]=impd3TOS[impd3TOS.length-1].getProcessor(); }
-			 */
 
 			if (!cdp.mask2data(countCells == null ? null : countCells.getProcessor(), newips, true))
 				ExceptionHandler.addError(Thread.currentThread(), "Error in cell data processor on slice " + iFrame);
@@ -581,23 +572,7 @@ public class AnalysisOperator extends PluginStatic {
 						tempTitle = windowTitle + "-" + (index++);
 					windowTitle = tempTitle;
 					tempTitle = null;
-					// mTOSrawRT.show(windowTitle);
-					/*
-					 * int Nrow = 100/numOfFTs[0]-1+100%numOfFTs[0], Ncolumn =
-					 * 100/numOfFTs[1]-1+100%numOfFTs[1]; for (int
-					 * iColumn=0;iColumn<=mTOSrawRT.getLastColumn();iColumn++){
-					 * double[] tempmTOS =
-					 * mTOSrawRT.getColumnAsDoubles(iColumn);
-					 * switch(statsChoice){ case HeatChartStackWindow.MEDIAN:
-					 * mMetricValues[Nrow-1-iColumn/Ncolumn][iColumn%Ncolumn] =
-					 * callmTOS.getMedian(tempmTOS); case
-					 * HeatChartStackWindow.MEAN:
-					 * mMetricValues[Nrow-1-iColumn/Ncolumn][iColumn%Ncolumn] =
-					 * callmTOS.getMean(tempmTOS); case
-					 * HeatChartStackWindow.MODE:
-					 * mMetricValues[Nrow-1-iColumn/Ncolumn][iColumn%Ncolumn] =
-					 * callmTOS.getMode(tempmTOS); } }
-					 */
+					
 					MatrixCalculator callmTOS = new MatrixCalculator(new int[] { DEFAULT_FT, DEFAULT_FT });
 					int matrixLength = BasicCalculator.ft2length(DEFAULT_FT);
 					mMetricValues = new double[matrixLength][matrixLength];
@@ -633,32 +608,6 @@ public class AnalysisOperator extends PluginStatic {
 				ImageWindow sdw = callD3Matrix.getD3Heatmap();
 				addWindow(sdw);
 
-				// callD3Matrix.getResultsTable().show("Values");
-
-				// System.out.println("callD3Matrix: " +
-				// Debugger.getTime("callD3Matrix", "ms"));
-
-				/*
-				 * Random rnd = new Random(); int N = 20; float[][] xValues1 =
-				 * new float[N][1]; float[][] yValues1 = new float[N][1];
-				 * float[][] zValues1 = new float[N][1]; for(int i=0;i<N;i++){
-				 * for(int j=0;j<1;j++){ xValues1[i][j] = rnd.nextFloat();
-				 * yValues1[i][j] = rnd.nextFloat(); zValues1[i][j] =
-				 * rnd.nextFloat(); } }
-				 * 
-				 * float[] customColors = new float[N]; for(int j=0;j<N;j++){
-				 * customColors[j] = rnd.nextFloat(); }
-				 * 
-				 * float[] customScales = {0,0.5f,1}; Color[] colorScales =
-				 * {Color.BLUE,Color.WHITE,Color.RED};
-				 * 
-				 * Scatter3DWindow spw = new Scatter3DWindow(
-				 * "Place Holder (NOT REAL DATA)"
-				 * ,"xLabel1","yLabel1","zLabel1",xValues1,yValues1,zValues1,
-				 * 217, customColors, customScales,colorScales); spw.draw();
-				 * addWindow(spw);
-				 */
-
 			}
 		}
 		// end of callmTOS
@@ -674,8 +623,6 @@ public class AnalysisOperator extends PluginStatic {
 
 			if (nReporters == 2) {
 
-				float[] xTholds = new float[cellData.length];
-				float[] yTholds = new float[cellData.length];
 				CostesThreshold costesTholder = new CostesThreshold();
 				for (int i = 0; i < cellData.length; i++) {
 					if (cellData[i][0] == null || cellData[i][1] == null) {
@@ -683,18 +630,12 @@ public class AnalysisOperator extends PluginStatic {
 					}
 					xData[count] = cellData[i][0].getData();
 					yData[count] = cellData[i][1].getData();
-					double[] costes = costesTholder.getCostesThrd(xData[count], yData[count]);
-					xTholds[count] = (float) costes[0];
-					yTholds[count] = (float) costes[1];
-
 					sliceLabels[count] = cellData[i][0].getLabel() != null ? cellData[i][0].getLabel()
 							: cellData[i][1].getLabel();
 					count++;
 				}
 				xData = Arrays.copyOfRange(xData, 0, count);
 				yData = Arrays.copyOfRange(yData, 0, count);
-				xTholds = Arrays.copyOfRange(xTholds, 0, count);
-				yTholds = Arrays.copyOfRange(yTholds, 0, count);
 
 				String windowTitle = "Scatterplots of random cells"
 						+ (markedIMG >= 0 ? (" in " + imps[markedIMG].getTitle()) : "");
@@ -704,7 +645,8 @@ public class AnalysisOperator extends PluginStatic {
 
 				ScatterPlotGenerator spg = new ScatterPlotGenerator(windowTitle, "Channel 1", "Channel 2", xData, yData,
 						sliceLabels);
-				spg.addLines(xTholds, yTholds);
+				
+				//spg.addCostes();
 				spw = spg.show();
 
 			} else {
@@ -715,16 +657,6 @@ public class AnalysisOperator extends PluginStatic {
 					xData[count] = cellData[i][0].getData();
 					yData[count] = cellData[i][1].getData();
 					zData[count] = cellData[i][2].getData();
-					/*
-					 * if (xData[count].length != yData[count].length) {
-					 * System.out.println("xData[" + count + "].length: " +
-					 * xData[count].length + ", yData[" + count + "].length: " +
-					 * yData[count].length + ", zData[" + count + "].length: " +
-					 * zData[count].length);
-					 * System.out.println(cellData[i][0].getLabel());
-					 * System.out.println(cellData[i][1].getLabel());
-					 * System.out.println(cellData[i][2].getLabel()); }
-					 */
 					sliceLabels[count] = cellData[i][0].getLabel() != null ? cellData[i][0].getLabel()
 							: cellData[i][1].getLabel();
 					count++;
