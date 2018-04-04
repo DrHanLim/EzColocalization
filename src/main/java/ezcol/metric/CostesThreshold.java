@@ -336,9 +336,7 @@ public class CostesThreshold {
 				thresholds[0] = projAarray[i];
 				thresholds[1] = projBarray[i];
 			}
-		}
-		
-		Debugger.printCurrentLine("slow PCC^2: " + PCC);		
+		}	
 		
 		return thresholds;
 	}
