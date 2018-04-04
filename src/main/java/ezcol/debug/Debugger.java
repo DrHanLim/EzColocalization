@@ -13,12 +13,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
-
-import com.sun.tools.javac.util.Pair;
 
 import ezcol.align.TurboRegMod;
 import ezcol.cell.CellData;
@@ -50,6 +49,7 @@ public class Debugger implements PluginConstants {
 	// [2] The line where addError is called
 	private static final int TRACE_LINE = 2;
 	private static Map<String, Long> timeMap = new HashMap<String, Long>();
+	private static final String SEPARATOR = "_____________________________________________";
 
 	public static void printStackTrace(int num) {
 		if (Thread.currentThread() != null)
@@ -62,6 +62,7 @@ public class Debugger implements PluginConstants {
 	}
 
 	public static void printCurrentLine(String str) {
+		System.out.println(SEPARATOR);
 		System.out.println("(" + Thread.currentThread().getStackTrace()[TRACE_LINE] + "): ");
 		System.out.println(str);
 	}
@@ -124,6 +125,13 @@ public class Debugger implements PluginConstants {
 				max = cellData[i];
 		}
 		System.out.println("max: " + max + ", min: " + min);
+	}
+	
+	public static void print(Vector<?> data){
+		Iterator<?> it = data.iterator();
+		while(it.hasNext()){
+			System.out.println(it.next());
+		}
 	}
 
 	public static void print(int[] cellData) {
