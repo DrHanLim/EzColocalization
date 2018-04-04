@@ -101,10 +101,11 @@ public class DebugCostes {
 				new String[]{""});
 		//Debugger.print(tmps);
 		//Debugger.printCurrentLine("(0, "+(int)tmps[1]+") to ("+(int)(- tmps[1] / tmps[0])+", 0)");
-		spg.addRegressionLine();
+		//spg.addRegressionLine();
 		
-		spg.addDashLines((float)tmpTholds[0], (float)tmpTholds[1], 0);
-		spg.addSolidLines((float)slowTholds[0], (float)slowTholds[1], 0);
+		//spg.addDashLines((float)tmpTholds[0], (float)tmpTholds[1], 0);
+		//spg.addSolidLines((float)slowTholds[0], (float)slowTholds[1], 0);
+		//spg.addCostes();
 		spg.show();
 	}
 }
