@@ -1,8 +1,10 @@
 package ezcol.visual.visual2D;
 
+import java.awt.Color;
 import java.util.Arrays;
 
 import ezcol.debug.Debugger;
+import ezcol.metric.CostesThreshold;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Plot;
@@ -63,8 +65,18 @@ public class ScatterPlotGenerator {
 
 			sliceLabels = alignArray(sliceLabels, nPlots);
 			xValues = alignArray(xValues, yValues, nPlots);
+			
+			this.xValues = xValues.clone();
+			this.yValues = yValues.clone();
+			this.xLabels = new String[nPlots];
+			this.yLabels = new String[nPlots];
+			for (int i = 0; i < nPlots; i++){
+				this.xLabels[i] = xLabel;
+				this.yLabels[i] = yLabel;
+			}
+			this.sliceLabels = sliceLabels.clone();
 
-			addPlots(xLabel, yLabel, xValues, yValues, sliceLabels);
+			addPlots(this.xLabels, this.yLabels, this.xValues, this.yValues, this.sliceLabels);
 		}
 	}
 
@@ -80,8 +92,14 @@ public class ScatterPlotGenerator {
 			yLabels = alignArray(yLabels, nPlots);
 			sliceLabels = alignArray(sliceLabels, nPlots);
 			xValues = alignArray(xValues, yValues, nPlots);
+			
+			this.xValues = xValues.clone();
+			this.yValues = yValues.clone();
+			this.xLabels = xLabels.clone();
+			this.yLabels = yLabels.clone();
+			this.sliceLabels = sliceLabels.clone();
 
-			addPlots(xLabels, yLabels, xValues, yValues, sliceLabels);
+			addPlots(this.xLabels, this.yLabels, this.xValues, this.yValues, this.sliceLabels);
 		}
 	}
 
@@ -101,6 +119,7 @@ public class ScatterPlotGenerator {
 	 * @param yValues
 	 */
 	public void addPlot(String sliceLabel, String xLabel, String yLabel, float[] xValue, float[] yValue) {
+		
 		int size = xValues.length;
 		nPlots++;
 		if (nPlots >= size) {
@@ -220,19 +239,15 @@ public class ScatterPlotGenerator {
 
 	private void addPlots(String[] xLabels, String[] yLabels, float[][] xValues, float[][] yValues,
 			String[] sliceLabels) {
-		for (int i = 0; i < nPlots; i++)
+		for (int i = 0; i < nPlots; i++){
 			addPlot(xLabels[i], yLabels[i], xValues[i], yValues[i], sliceLabels[i], i);
-		imp = new ImagePlus(title, impStack);
-	}
-
-	private void addPlots(String xLabel, String yLabel, float[][] xValues, float[][] yValues, String[] sliceLabel) {
-		for (int i = 0; i < nPlots; i++)
-			addPlot(xLabel, yLabel, xValues[i], yValues[i], sliceLabel[i], i);
+		}
 		imp = new ImagePlus(title, impStack);
 	}
 
 	public PlotStackWindow show() {
 		psw = new PlotStackWindow(plots, imp);
+		psw.addParent(this);
 		// psw.showStack();
 		return psw;
 	}
@@ -254,16 +269,57 @@ public class ScatterPlotGenerator {
 		}
 		imp = new ImagePlus(title, impStack);
 	}
+	
+	public void addCostes(){
+		if (plots == null)
+			return;
+		CostesThreshold costesTholder = new CostesThreshold();
+		//Must call updateImage() to update the current plot
+		//addLegend will automatically do that
+		//Otherwise, it won't show up on the plot until the user zoom
+		addRegressionLine();
+		for (int iSlice = 0; iSlice < nPlots; iSlice++){
+			double[] tholds = costesTholder.getCostesThrd(xValues[iSlice], yValues[iSlice]);
+			addDashLines((float)tholds[0], (float)tholds[1], iSlice);
+			plots[iSlice].addLegend("Data, --- Costes, ¡ª¡ª linear regression");
+			plots[iSlice].updateImage();
+		}
+		
+	}
 
 	/*
 	 * Used for additional threshold lines
 	 */
-	public void addLines(float[] xThold, float[] yThold) {
-		for (int i = 0; i < nPlots; i++)
-			addLines(xThold[i], yThold[i], i);
-	}
 
-	public void addLines(float xThold, float yThold, int iSlice) {
+	public void addDashLines(float xThold, float yThold, int iSlice) {
+		if (plots == null)
+			return;
+		int step = 10;
+		double[] limits = plots[iSlice].getLimits();
+
+		int ystep = (int) ((limits[1] - limits[0]) / step / 2);
+		int xstep = (int) ((limits[3] - limits[2]) / step / 2);
+		ystep = ystep > 0 ? ystep : 1;
+		xstep = xstep > 0 ? xstep : 1;
+		
+		if(yThold < limits[2])
+			yThold = (float)limits[2];
+		else if(yThold > limits[3])
+			yThold = (float)limits[3];
+		
+		if(xThold < limits[0])
+			xThold = (float)limits[0];
+		else if(xThold > limits[1])
+			xThold = (float)limits[1];
+		
+		for (int i = 0; i < step; i++) {
+			plots[iSlice].drawLine(limits[0] + ystep * i * 2, yThold, limits[0] + ystep * (2 * i + 1), yThold);
+			plots[iSlice].drawLine(xThold, limits[2] + xstep * i * 2, xThold, limits[2] + xstep * (2 * i + 1));
+			
+		}
+	}
+	
+	public void addSolidLines(float xThold, float yThold, int iSlice) {
 		if (plots == null)
 			return;
 		int step = 20;
@@ -273,13 +329,89 @@ public class ScatterPlotGenerator {
 		int xstep = (int) ((limits[3] - limits[2]) / step / 2);
 		ystep = ystep > 0 ? ystep : 1;
 		xstep = xstep > 0 ? xstep : 1;
-
-		for (int i = 0; i < step; i++) {
-			plots[iSlice].drawLine(limits[0] + ystep * i * 2, yThold, limits[0] + ystep * (2 * i + 1), yThold);
-			plots[iSlice].drawLine(xThold, limits[2] + xstep * i * 2, xThold, limits[2] + xstep * (2 * i + 1));
-			
+		
+		if(yThold < limits[2])
+			yThold = (float)limits[2];
+		else if(yThold > limits[3])
+			yThold = (float)limits[3];
+		
+		if(xThold < limits[0])
+			xThold = (float)limits[0];
+		else if(xThold > limits[1])
+			xThold = (float)limits[1];
+		
+		plots[iSlice].drawLine(limits[0], yThold, limits[1], yThold);
+		plots[iSlice].drawLine(xThold, limits[2], xThold, limits[3]);
+	}
+	
+	private void addRegressionLine(){
+		addRegressionLine(xValues, yValues);
+	}
+	
+	private void addRegressionLine(float[][] xValues, float[][] yValues){
+		if(xValues==null || yValues ==null)
+			return;
+		CostesThreshold costes = new CostesThreshold();
+		for (int i = 0; i < nPlots; i++){
+			double[] lngs = costes.linreg(xValues[i], yValues[i]);
+			addLine(lngs, i);
 		}
-		plots[iSlice].addLegend("Data ( --- Costes )");
+	}
+	
+	
+	//draw linear regression line
+	public void addLine(double[] tmps, int iSlice){
+		if (plots == null || tmps == null || tmps.length < 2)
+			return;
+		
+		//limits: {xMin, xMax, yMin, yMax}
+		double[] limits = plots[iSlice].getLimits();
+		double x1, y1, x2, y2;
+		
+		if (tmps[0] < 0){
+			x1 = ((limits[3] - tmps[1])/ tmps[0]);
+		    y1 = (limits[0] * tmps[0] + tmps[1]);
+			x2 = ((limits[2] - tmps[1])/ tmps[0]);
+			y2 = (limits[1] * tmps[0] + tmps[1]);
+		}else{
+			x1 = ((limits[3] - tmps[1])/ tmps[0]);
+		    y1 = (limits[1] * tmps[0] + tmps[1]);
+			x2 = ((limits[2] - tmps[1])/ tmps[0]);
+			y2 = (limits[0] * tmps[0] + tmps[1]);
+		}
+		
+		if(x1 < limits[0])
+			x1 = limits[0];
+		else if(x1 > limits[1])
+			x1 = limits[1];
+		
+		if(y1 < limits[2])
+			y1 = limits[2];
+		else if(y1 > limits[3])
+			y1 = limits[3];
+		
+		if(x2 < limits[0])
+			x2 = limits[0];
+		else if(x2 > limits[1])
+			x2 = limits[1];
+		
+		if(y2 < limits[2])
+			y2 = limits[2];
+		else if(y2 > limits[3])
+			y2 = limits[3];
+		
+		plots[iSlice].drawLine(x1, y1, x2, y2);
+			
+	}
+	
+	/**
+	 * Because ImageJ Plot class doesn't offer a way to remove PlotObjects
+	 * I have to replot the whole thing to remove extra Costes' threshold lines
+	 */
+	public ImagePlus replot(){
+		
+		addPlots(xLabels, yLabels, xValues, yValues, sliceLabels);
+		return imp;
 	}
 
 }
