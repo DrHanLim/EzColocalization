@@ -21,6 +21,7 @@ import java.util.jar.JarFile;
 import javax.imageio.ImageIO;
 
 import ezcol.debug.ExceptionHandler;
+import ezcol.main.PluginStatic;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.io.Opener;
@@ -80,11 +81,14 @@ public class FilesIO {
 
 		String[] strs = null;
 		try {
-			strs = getResourceListing(FilesIO.class, IMAGE_DIRECTORY);
+			//I use EzColocalization_.class here because duplication of
+			//plugin name is not allowed in ImageJ
+			strs = getResourceListing(PluginStatic.getPlugInClass(), IMAGE_DIRECTORY);
 		} catch (URISyntaxException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			ExceptionHandler.handleException(e);
+			IJ.log(""+e);
 		}
 		for (String str : strs) {
 			if (isExtension(str, "tif")) {
@@ -104,29 +108,30 @@ public class FilesIO {
 	 *             http://www.uofr.net/~greg/java/get-resource-listing.html
 	 */
 	public static String[] getResourceListing(Class clazz, String path) throws URISyntaxException, IOException {
-		URL dirURL = clazz.getClassLoader().getResource(path);
+		//Looking for jar using path might end up in a different jar
+		//We just assume we are using this jar
+		/*URL dirURL = clazz.getClassLoader().getResource(path);
+		
 		if (dirURL != null && dirURL.getProtocol().equals("file")) {
-			/* A file path: easy enough */
+			// A file path: easy enough
 			return new File(dirURL.toURI()).list();
 		}
-
 		if (dirURL == null) {
-			/*
-			 * In case of a jar file, we can't actually find a directory. Have
-			 * to assume the same jar as clazz.
-			 */
+			//In case of a jar file, we can't actually find a directory. Have
+			// to assume the same jar as clazz.
+			 
 			String me = clazz.getName().replace(".", "/") + ".class";
 			dirURL = clazz.getClassLoader().getResource(me);
-		}
-
+		}*/
+		//This will be a bug if and only if there exists another jar
+		//which has exactly the same relative path of this class
+		String me = clazz.getName().replace(".", "/") + ".class";
+		URL dirURL = clazz.getClassLoader().getResource(me);
+		
 		if (dirURL.getProtocol().equals("jar")) {
 			/* A JAR path */
-			String jarPath = dirURL.getPath().substring(5, dirURL.getPath().indexOf("!")); // strip
-																							// out
-																							// only
-																							// the
-																							// JAR
-																							// file
+			String jarPath = dirURL.getPath().substring(5, dirURL.getPath().indexOf("!"));
+			//strip out only the JAR file
 			JarFile jar = new JarFile(URLDecoder.decode(jarPath, "UTF-8"));
 			Enumeration<JarEntry> entries = jar.entries(); // gives ALL entries
 															// in jar
