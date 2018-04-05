@@ -172,6 +172,8 @@ public class CellData {
 	// clone all arrhdays before handing out to prevent other classes
 	// from changing the arrays
 	public double[] getRank() {
+		if(rank == null)
+			sort();
 		return rank == null ? null : rank.clone();
 	}
 
@@ -199,6 +201,8 @@ public class CellData {
 	}
 
 	public double getPixelRank(int i) {
+		if(rank == null)
+			sort();
 		if (rank != null && rank.length > i)
 			return rank[i];
 		else
