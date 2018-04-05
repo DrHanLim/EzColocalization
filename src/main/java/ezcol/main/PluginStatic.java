@@ -146,6 +146,7 @@ public abstract class PluginStatic implements PluginConstants {
 	 * @see CellFinder
 	 * @see ResultsTable
 	 */
+	private static Class<?> EzColocalization;
 
 	static final String[] SHAPE_FILTERS = { "Area", "X", "Y", "Perim.", "BX", "BY", "Width", "Height", "Major", "Minor",
 			"Angle", "Circ.", "Feret", "FeretX", "FeretY", "FeretAngle", "MinFeret", "AR", "Round", "Solidity",
@@ -1108,12 +1109,17 @@ public abstract class PluginStatic implements PluginConstants {
 		return result;
 	}
 
-	public static void setPlugInName(String pluginName) {
-		PluginStatic.pluginName = pluginName.replace("_", " ");
+	public static void setPlugIn(Class<?> clazz) {
+		EzColocalization = clazz;
+		PluginStatic.pluginName = clazz.getSimpleName().replace("_", " ");
 	}
 
 	public static String getPlugInName() {
 		return pluginName;
+	}
+	
+	public static Class<?> getPlugInClass(){
+		return EzColocalization;
 	}
 
 	public static String getInfo() {
