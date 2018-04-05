@@ -543,10 +543,12 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 
 		if (stackFrame == null || coordinates == null)
 			return;
-		if (stackFrame.contains(x, y))
-			coordinates.setText("X=" + d2s(plot.descaleX(x)) + ", Y=" + d2s(plot.descaleY(y)));
-		else
-			coordinates.setText("");
+		if (stackFrame.contains(x, y)) {	//coordinate readout
+				String coords = "X=" + d2s(plot.descaleX(x)) + ", Y=" + d2s(plot.descaleY(y)) + blankLabel;
+				coordinates.setText(coords.substring(0, blankLabel.length()));
+		}else
+			coordinates.setText(blankLabel);
+		
 
 		// arrows for modifying the plot range
 		if (x < leftMargin || y > topMargin + frameHeight) {
@@ -873,6 +875,15 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 			//However, I keep it here for completeness
 			if (ic instanceof PlotCanvas)
 				((PlotCanvas) ic).setPlot(plot);
+			
+			//This might not be necessary either
+			//Just in case
+			if(plot !=null){
+				stackFrame = plot.getDrawingFrame();
+				frameWidth = stackFrame.width;
+				frameHeight = stackFrame.height;
+				Debugger.printCurrentLine("frameWidth: "+frameWidth+", frameHeight: "+frameHeight);
+			}
 		}
 
 		ic.repaint();
