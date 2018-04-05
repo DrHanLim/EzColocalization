@@ -152,6 +152,9 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 						// larger by 1
 	Rectangle stackFrame = null;
 	private boolean logScale, showCostes;
+	
+	private ScatterPlotGenerator spg;
+	private Vector <Object> ipRefs = new Vector<Object>();
 
 	// static initializer
 	static {
@@ -190,6 +193,37 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 			// Fix it here to get zoom out work properly
 			for (int i = 0; i < this.plots.length; i++)
 				this.plots[i].setImagePlus(imp);
+			draw();
+		}
+	}
+	
+	PlotStackWindow(Plot[] plots, ImagePlus imp, ScatterPlotGenerator spg) {
+		super(imp, new PlotCanvas(imp));
+		//Add a handle to ScatterPlotGenerator which will be used to
+		//Replot data to toggle Costes thresholds on and off
+		this.spg = spg;
+		
+		// ((PlotCanvas)getCanvas()).setPlot(plot);
+		if (plots != null && plots.length > 0) {
+			this.plots = plots;
+			this.plot = plots[0];
+			((PlotCanvas) getCanvas()).setPlot(plot);
+			// ImageJ will not update after zoom out
+			// this is because the displayed ImagePlus doesn't match the one in
+			// Plot
+			// Fix it here to get zoom out work properly
+			
+			//save sliceLabels in the constructor in case users change it later
+			for (int i = 0; i < this.plots.length; i++){
+				this.plots[i].setImagePlus(imp);
+				//This might be a dumb work around
+				//I'm looking for a unique id to identify which slice 
+				//has been removed
+				//The best identifier I can find and get is pixel array
+				if(i <= this.imp.getStackSize()){
+					ipRefs.add(this.imp.getStack().getProcessor(i + 1).getPixels());
+				}
+			}
 			draw();
 		}
 	}
@@ -555,7 +589,10 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 				slice = 0;
 				if (s != imp.getCurrentSlice()) {
 					imp.setSlice(s);
-					plot = plots[s - 1];
+					if(s - 1 < plots.length)
+						plot = plots[s - 1];
+					else
+						plot = null;
 					((PlotCanvas) getCanvas()).setPlot(plot);
 				}
 			}
@@ -775,14 +812,6 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 		return plot;
 	}
 
-	private ScatterPlotGenerator spg;
-
-	//Add a handle to ScatterPlotGenerator which will be used to
-	//Replot data to toggle Costes thresholds on and off
-	void addParent(ScatterPlotGenerator spg) {
-		this.spg = spg;
-	}
-
 	private void showCostes(boolean showCostes) {
 		if (spg == null)
 			return;
@@ -798,30 +827,45 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 				tempPlot[i] = plots[i];
 			}
 			int iSlice = this.imp.getCurrentSlice();
-			ImagePlus imp = spg.replot();
+			spg.replot();
+			
 			//Becuase Plots array is shared between ScatterPlotGenerator and PlotStackWindow
 			//We could use spg to recreate the plot element in Plots array, 
 			//which will also affect the Plots here
 			
 			for (int i = 0; i < plots.length; i++){
-				if(tempPlot[i] == null){
-					plots[i] = null;
-					continue;
-				}
 				plots[i].setImagePlus(this.imp);
 				//plots[i].useTemplate(tempPlot[i]);
-				double[] limits = tempPlot[i].getLimits();
-				if (logScale) {
-					for (int ilimit = 0; ilimit < limits.length; ilimit++)
-						limits[ilimit] = Math.pow(10, limits[ilimit]);
-				}
+				double[] limits = spg.getTrueLimits(tempPlot[i]);
+				//boolean[] logScales = spg.getTrueLogs(tempPlot[i]);
 				plots[i].setLimits(limits[0], limits[1], limits[2], limits[3]);
 				plots[i].setAxisXLog(logScale);
 				plots[i].setAxisYLog(logScale);
-				this.imp.getStack().setProcessor(plots[i].getProcessor(), i + 1);
 				plots[i].updateImage();
 			}
-			plot = plots[iSlice - 1];
+			
+			Vector<Object> currentIps = new Vector<Object>();
+			for (int i = 0; i < this.imp.getStackSize(); i++){
+				currentIps.add(this.imp.getStack().getProcessor(i + 1).getPixels());
+			}
+			
+			for (int i = 0; i < ipRefs.size(); i++){
+				if (currentIps.indexOf(ipRefs.get(i)) != -1){
+					int idxSlice = currentIps.indexOf(ipRefs.get(i));
+					if(tempPlot[i] == null){
+						plots[i] = null;
+						continue;
+					}
+					this.imp.getStack().setProcessor(plots[i].getProcessor(), idxSlice + 1);
+				}
+				plots[i].updateImage();
+				ipRefs.remove(i);
+				ipRefs.insertElementAt(plots[i].getProcessor().getPixels(), i);
+			}
+			if(iSlice - 1 < plots.length)
+				plot = plots[iSlice - 1];
+			else
+				plot = null;
 			//The following line will work
 			//And the above manipulation is synthesized from the following line
 			//drawPlot(plot);
