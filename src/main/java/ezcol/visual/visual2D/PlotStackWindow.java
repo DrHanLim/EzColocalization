@@ -28,6 +28,7 @@ import java.awt.event.MouseWheelEvent;
 import java.io.CharArrayWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Vector;
 
 import ezcol.debug.Debugger;
@@ -74,7 +75,7 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 	/**
 	 * Save x-values only. To set, use Edit/Options/ Profile Plot Options.
 	 */
-	public static boolean saveXValues;
+	public static boolean saveXValues = true;
 	/**
 	 * Automatically close window after saving values. To set, use
 	 * Edit/Options/Profile Plot Options.
@@ -154,12 +155,12 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 	private boolean logScale, showCostes;
 	
 	private ScatterPlotGenerator spg;
-	private Vector <Object> ipRefs = new Vector<Object>();
+	private ArrayList <Object> ipRefs = new ArrayList<Object>();
 
 	// static initializer
 	static {
 		options = Prefs.getInt(OPTIONS, SAVE_X_VALUES);
-		saveXValues = (options & SAVE_X_VALUES) != 0;
+		//saveXValues = (options & SAVE_X_VALUES) != 0;
 		autoClose = (options & AUTO_CLOSE) != 0;
 		listValues = (options & LIST_VALUES) != 0;
 		plotWidth = Prefs.getInt(PREFS_WIDTH, WIDTH);
@@ -191,7 +192,7 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 			// this is because the displayed ImagePlus doesn't match the one in
 			// Plot
 			// Fix it here to get zoom out work properly
-			for (int i = 0; i < this.plots.length; i++)
+			for (int i = this.plots.length - 1; i >= 0 ; i--)
 				this.plots[i].setImagePlus(imp);
 			draw();
 		}
@@ -214,15 +215,18 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 			// Fix it here to get zoom out work properly
 			
 			//save sliceLabels in the constructor in case users change it later
-			for (int i = 0; i < this.plots.length; i++){
+			//To adapt to the new method of setImagePlus
+			//A reverse order is implemented so that the ImageProcessor
+			//of the first Plot in plots array
+			//is set to be the first slice
+			for (int i = this.plots.length - 1; i >= 0 ; i--){
 				this.plots[i].setImagePlus(imp);
-				//This might be a dumb work around
+				//This might be a dumb workaround
 				//I'm looking for a unique id to identify which slice 
-				//has been removed
+				//has been removed or added
 				//The best identifier I can find and get is pixel array
-				if(i <= this.imp.getStackSize()){
-					ipRefs.add(this.imp.getStack().getProcessor(i + 1).getPixels());
-				}
+				//ipRefs.insertElementAt(imp.getStack().getProcessor(i + 1).getPixels(), 0);
+				ipRefs.add(0, imp.getStack().getProcessor(i + 1).getPixels());
 			}
 			draw();
 		}
@@ -287,6 +291,11 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 	}
 
 	/** Draws a new plot in this window. */
+	/**
+	 * WARNING: this method is never used or tested
+	 * @param plot
+	 */
+	/*
 	public void drawPlot(Plot plot) {
 		if (plot != null) {
 			this.plot = plot;
@@ -298,7 +307,7 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 				plot.setImagePlus(imp); // also adjusts the calibration of imp
 			}
 		}
-	}
+	}*/
 
 	@Deprecated
 	public void showStack() {
@@ -504,12 +513,20 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 
 	private void setLogScale(boolean doLog) {
 		if (plots != null) {
+			ImageProcessor ip = this.imp.getProcessor();
+			int currentPlot = ipRefs.indexOf(ip.getPixels());
 			for (int i = 0; i < plots.length; i++) {
 				if (plots[i] == null)
 					continue;
 				plots[i].setAxisXLog(doLog);
 				plots[i].setAxisYLog(doLog);
 				plots[i].updateImage();
+			}
+			//plot.updateImage();
+			if(currentPlot == -1){
+				this.imp.setProcessor(ip);
+			}else{
+				plots[currentPlot].updateImage();
 			}
 		}
 		/*
@@ -522,10 +539,20 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 	@Override
 	public synchronized void adjustmentValueChanged(AdjustmentEvent e) {
 		super.adjustmentValueChanged(e);
-		if (plots != null && imp.getCurrentSlice() <= plots.length) {
-			plot = plots[imp.getCurrentSlice() - 1];
+		int currentPlot = ipRefs.indexOf(imp.getStack().getProcessor(e.getValue()).getPixels());
+		//int currentPlot = ipRefs.indexOf(imp.getProcessor().getPixels());
+		
+		if (plots != null && !imp.isLocked()) {
+			if(currentPlot != -1){
+				
+				plot = plots[currentPlot];
+			}
+			else
+				plot = null;
 			((PlotCanvas) getCanvas()).setPlot(plot);
+			//plot might be off sync with imp here but it's OK.
 		}
+		
 	}
 
 	/**
@@ -590,16 +617,35 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 				int s = slice;
 				slice = 0;
 				if (s != imp.getCurrentSlice()) {
-					imp.setSlice(s);
-					if(s - 1 < plots.length)
-						plot = plots[s - 1];
-					else
-						plot = null;
-					((PlotCanvas) getCanvas()).setPlot(plot);
+					
+					
+					if(setSlice(imp, s) && !imp.isLocked())
+					{
+						int currentPlot = ipRefs.indexOf(imp.getProcessor().getPixels());
+						if(currentPlot != -1){
+							plot = plots[currentPlot];
+							//Synchronize plot.getProcessor and imp.getProcessor
+							//They might be different due to zooming
+							//The actual mechanism is not clear to me
+							plot.getProcessor().setPixels(imp.getProcessor().getPixels());
+						}else
+							plot = null;
+						((PlotCanvas) getCanvas()).setPlot(plot);
+					}
 				}
 			}
 		}
 	}
+	
+	private boolean setSlice(ImagePlus imp, int n) {
+		if (imp.isLocked()) {
+			IJ.beep();
+			IJ.showStatus("Image is locked");
+			return false;
+		} else
+			imp.setSlice(n);
+		return true;
+    }
 
 	/** Called if user has activated a button or popup menu item */
 	@Override
@@ -810,25 +856,35 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 		return new Dimension(extraWidth, extraHeight);
 	}
 
-	public Plot getPlot() {
+	/*public Plot getPlot() {
 		return plot;
-	}
+	}*/
 
 	private void showCostes(boolean showCostes) {
-		if (spg == null)
+		if (spg == null || imp.isLocked())
 			return;
+		ImageProcessor ip = this.imp.getProcessor();
+		int currentPlot = ipRefs.indexOf(ip.getPixels());
+		
 		if (showCostes){
 			spg.addCostes();
+			if(currentPlot == -1){
+				this.imp.setProcessor(ip);
+			}else{
+				plots[currentPlot].updateImage();
+			}
+			//this.imp.duplicate().show();
 			/*for (int i = 0; i < plots.length; i++){
 				this.imp.getStack().setProcessor(plots[i].getProcessor(), i + 1);
 				plots[i].updateImage();
 			}*/
 		}else {
+			
 			Plot[] tempPlot = new Plot[plots.length];
 			for (int i = 0; i < plots.length; i++){
 				tempPlot[i] = plots[i];
 			}
-			int iSlice = this.imp.getCurrentSlice();
+			//int iSlice = this.imp.getCurrentSlice();
 			spg.replot();
 			
 			//Becuase Plots array is shared between ScatterPlotGenerator and PlotStackWindow
@@ -852,22 +908,27 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 			}
 			
 			for (int i = 0; i < ipRefs.size(); i++){
-				if (currentIps.indexOf(ipRefs.get(i)) != -1){
-					int idxSlice = currentIps.indexOf(ipRefs.get(i));
-					if(tempPlot[i] == null){
-						plots[i] = null;
-						continue;
-					}
+				if(tempPlot[i] == null){
+					plots[i] = null;
+					continue;
+				}
+				int idxSlice = currentIps.indexOf(ipRefs.get(i));
+				if (idxSlice != -1){
 					this.imp.getStack().setProcessor(plots[i].getProcessor(), idxSlice + 1);
 				}
 				plots[i].updateImage();
 				ipRefs.remove(i);
-				ipRefs.insertElementAt(plots[i].getProcessor().getPixels(), i);
+				//ipRefs.insertElementAt(plots[i].getProcessor().getPixels(), i);
+				ipRefs.add(i, plots[i].getProcessor().getPixels());
 			}
-			if(iSlice - 1 < plots.length)
-				plot = plots[iSlice - 1];
-			else
+			
+			if(currentPlot != -1){
+				plot = plots[currentPlot];
+				plot.updateImage();
+			}else{
 				plot = null;
+				this.imp.setProcessor(ip);
+			}
 			//The following line will work
 			//And the above manipulation is synthesized from the following line
 			//drawPlot(plot);
@@ -882,11 +943,21 @@ public class PlotStackWindow extends StackWindow implements ActionListener, Clip
 				stackFrame = plot.getDrawingFrame();
 				frameWidth = stackFrame.width;
 				frameHeight = stackFrame.height;
-				Debugger.printCurrentLine("frameWidth: "+frameWidth+", frameHeight: "+frameHeight);
 			}
 		}
 
 		ic.repaint();
+	}
+	
+	@Override
+	public void updateSliceSelector() {
+		super.updateSliceSelector();
+		int currentPlot = ipRefs.indexOf(imp.getProcessor().getPixels());
+		if(currentPlot != -1)
+			plot = plots[currentPlot];
+		else
+			plot = null;
+		((PlotCanvas) getCanvas()).setPlot(plot);
 	}
 
 }
