@@ -49,7 +49,6 @@ public class Debugger implements PluginConstants {
 	// [2] The line where addError is called
 	private static final int TRACE_LINE = 2;
 	private static Map<String, Long> timeMap = new HashMap<String, Long>();
-	private static final String SEPARATOR = "_____________________________________________";
 
 	public static void printStackTrace(int num) {
 		if (Thread.currentThread() != null)
@@ -60,15 +59,28 @@ public class Debugger implements PluginConstants {
 					break;
 			}
 	}
+	
+	public static void printCurrentLine(String... strs) {
+		String ste = Thread.currentThread().getStackTrace()[TRACE_LINE].toString();
+		String separator = new String(new char[ste.length()]).replace('\0', '_');
+		System.out.println(separator);
+		System.out.println(ste);
+		for(String str: strs)
+			System.out.println(str);
+		System.out.println(separator);
+	}
 
 	public static void printCurrentLine(String str) {
-		System.out.println(SEPARATOR);
-		System.out.println("(" + Thread.currentThread().getStackTrace()[TRACE_LINE] + "): ");
+		String ste = Thread.currentThread().getStackTrace()[TRACE_LINE].toString();
+		String separator = new String(new char[ste.length()]).replace('\0', '_');
+		System.out.println(separator);
+		System.out.println(ste);
 		System.out.println(str);
+		System.out.println(separator);
 	}
 
 	public static void printCurrentLine() {
-		System.out.println("(" + Thread.currentThread().getStackTrace()[TRACE_LINE] + ")");
+		System.out.println(Thread.currentThread().getStackTrace()[TRACE_LINE]);
 	}
 
 	public static String currentLine() {
@@ -132,6 +144,40 @@ public class Debugger implements PluginConstants {
 		while(it.hasNext()){
 			System.out.println(it.next());
 		}
+	}
+	
+	public static<T> void print(T[] data){
+		for(T element: data){
+			System.out.println(element);
+		}
+	}
+	
+	public static void print(byte[] cellData) {
+		if (cellData == null) {
+			System.out.println("input data is null");
+			return;
+		}
+		if (cellData.length == 0) {
+			System.out.println("input data has 0 element");
+			return;
+		}
+		for (int i = 0; i < cellData.length; i++)
+			System.out.print(cellData[i] + " ");
+		System.out.println();
+	}
+	
+	public static void print(boolean[] cellData) {
+		if (cellData == null) {
+			System.out.println("input data is null");
+			return;
+		}
+		if (cellData.length == 0) {
+			System.out.println("input data has 0 element");
+			return;
+		}
+		for (int i = 0; i < cellData.length; i++)
+			System.out.print(cellData[i] + " ");
+		System.out.println();
 	}
 
 	public static void print(int[] cellData) {
