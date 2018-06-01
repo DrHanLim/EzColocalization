@@ -1064,9 +1064,11 @@ public class AnalysisOperator extends PluginStatic {
 					IJ.error(pluginName + " error", "Missing Input in " + imgLabels[i] + " for selected operation");
 					return -1;
 				}
-
-				if (imps[i].getBitDepth() == ImagePlus.COLOR_RGB) {
+				if (imps[i].getType() == ImagePlus.COLOR_RGB) {
 					IJ.error(pluginName + " error", "Input cannot be RGB images");
+					return -1;
+				}else if(imps[i].getType() == ImagePlus.COLOR_256){
+					IJ.error(pluginName + " error", "Input cannot be 8-bit color images");
 					return -1;
 				}
 

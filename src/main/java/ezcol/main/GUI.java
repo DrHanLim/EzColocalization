@@ -16,6 +16,7 @@ import ij.plugin.OverlayLabels;
 import ij.plugin.frame.Recorder;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
+import ij.util.Java2;
 import ij.process.AutoThresholder.Method;
 
 import javax.swing.JFrame;
@@ -56,6 +57,8 @@ import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 import java.awt.GridLayout;
 
@@ -411,7 +414,22 @@ public class GUI extends PluginStatic
 			menuItem.getAccessibleContext().setAccessibleDescription(menuString);
 			menuItem.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
+					
+					Java2.setSystemLookAndFeel();
+					
+					try {
+						UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
+					} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+							| UnsupportedLookAndFeelException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+						IJ.log(""+e1);
+					}
+					
 					IJ.doCommand(((JMenuItem) (e.getSource())).getText());
+					
+					
+					
 				}
 			});
 			menu.add(menuItem);
@@ -1765,13 +1783,13 @@ public class GUI extends PluginStatic
 			 */
 		}
 
-		// non-grayscaled images are not taken into account
+		// RGB and 8-bit color images are not taken into account
 		if (WindowManager.getImageCount() != 0) {
 			nbImgs = 0;
 			int[] IDList = WindowManager.getIDList();
 			for (int i = 0; i < IDList.length; i++) {
 				ImagePlus currImg = WindowManager.getImage(IDList[i]);
-				if (currImg.createLut().isGrayscale()) {
+				if (currImg.getType()!= ImagePlus.COLOR_256 && currImg.getType()!= ImagePlus.COLOR_RGB) {
 					nbImgs++;
 					if (updateListAll) {
 						ImageInfo item = new ImageInfo(currImg);
@@ -1786,7 +1804,10 @@ public class GUI extends PluginStatic
 					}
 					if (addImp != null && currImg == addImp)
 						isOpened = true;
-
+				}else{
+					//Do not add RGB or 8-bit color images
+					if (addImp != null && currImg == addImp)
+						isOpened = false;
 				}
 			}
 		}
@@ -2858,16 +2879,22 @@ public class GUI extends PluginStatic
 
 	public void imageUpdated(ImagePlus imp) {
 		if (imgUpdate && imp.getID() != 0) {
-			boolean listed = false;
+			/*boolean listed = false;
 			for (ImageInfo imgInfo : info) {
 				if (imgInfo.equalID(imp)) {
 					listed = true;
 					break;
 				}
 			}
-			if (listed) {
-				updateImgList(imp, imp);
-			}
+			if (listed)*/
+			//InvokeLater after the update of the current image
+			SwingUtilities.invokeLater(new Runnable(){
+				@Override
+				public void run(){
+					updateImgList(imp, imp);
+				}
+			});
+				
 		}
 	}
 
