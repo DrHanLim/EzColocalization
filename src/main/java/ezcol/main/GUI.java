@@ -1738,7 +1738,7 @@ public class GUI extends PluginStatic
 		superPanel.add(email, gbc_btnNewButton_1);
 	}
 
-	public void updateImgList(ImagePlus addImp, ImagePlus deleteImp) {
+	public synchronized void updateImgList(ImagePlus addImp, ImagePlus deleteImp) {
 		final byte NO_IMG = 4, NULL_IMG = 0, ADD_IMG = 1, DEL_IMG = 2, REPLACE_IMG = ADD_IMG + DEL_IMG;
 		// use as offset when new image labels are added to JCombobox
 		final int[] offset = new int[imgCombbxes.length];
@@ -1782,14 +1782,14 @@ public class GUI extends PluginStatic
 			 * imgd3TOS.removeAllItems(); imgd3TOS.addItem(NOIMAGE); }
 			 */
 		}
-
+		//System.out.println("----------");
 		// RGB and 8-bit color images are not taken into account
 		if (WindowManager.getImageCount() != 0) {
 			nbImgs = 0;
 			int[] IDList = WindowManager.getIDList();
 			for (int i = 0; i < IDList.length; i++) {
 				ImagePlus currImg = WindowManager.getImage(IDList[i]);
-				if (currImg.getType()!= ImagePlus.COLOR_256 && currImg.getType()!= ImagePlus.COLOR_RGB) {
+				if (currImg.getType()!= ImagePlus.COLOR_RGB) {
 					nbImgs++;
 					if (updateListAll) {
 						ImageInfo item = new ImageInfo(currImg);
@@ -1811,11 +1811,20 @@ public class GUI extends PluginStatic
 				}
 			}
 		}
-
+		
 		if (deleteImp != null) {
 			for (int i = 0; i < info.size(); i++) {
 				if (info.elementAt(i).equalID(deleteImp)) {
 					idxClose = i;
+					break;
+				}
+			}
+		}
+		
+		if(addImp != null && deleteImp == null){
+			for (int i = 0; i < info.size(); i++) {
+				if (info.elementAt(i).equal(new ImageInfo(addImp))) {
+					addImp = null;
 					break;
 				}
 			}
@@ -2879,22 +2888,15 @@ public class GUI extends PluginStatic
 
 	public void imageUpdated(ImagePlus imp) {
 		if (imgUpdate && imp.getID() != 0) {
-			/*boolean listed = false;
-			for (ImageInfo imgInfo : info) {
-				if (imgInfo.equalID(imp)) {
-					listed = true;
-					break;
-				}
-			}
-			if (listed)*/
 			//InvokeLater after the update of the current image
 			SwingUtilities.invokeLater(new Runnable(){
 				@Override
 				public void run(){
+					//imgIO = false;
 					updateImgList(imp, imp);
+					//imgIO = true;
 				}
 			});
-				
 		}
 	}
 
