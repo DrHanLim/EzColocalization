@@ -2211,7 +2211,7 @@ public class GUI extends PluginStatic
 			
 			tabs.setEnabledAt(FILTERTAB, isPresent);
 
-			previewTholdBtn.setEnabled(isPresent);
+			previewTholdBtn.setEnabled(anyReporter || isPresent);
 			doAlignmentBtn.setEnabled(anyReporter && isPresent);
 			resetAlignmentBtn.setEnabled(anyReporter && isPresent);
 
