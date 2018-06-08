@@ -1067,9 +1067,6 @@ public class AnalysisOperator extends PluginStatic {
 				if (imps[i].getType() == ImagePlus.COLOR_RGB) {
 					IJ.error(pluginName + " error", "Input cannot be RGB images");
 					return -1;
-				}else if(imps[i].getType() == ImagePlus.COLOR_256){
-					IJ.error(pluginName + " error", "Input cannot be 8-bit color images");
-					return -1;
 				}
 
 				cal = imps[i].getGlobalCalibration() == null ? imps[i].getCalibration()
