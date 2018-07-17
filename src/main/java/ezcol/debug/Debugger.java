@@ -49,15 +49,29 @@ public class Debugger implements PluginConstants {
 	// [2] The line where addError is called
 	private static final int TRACE_LINE = 2;
 	private static Map<String, Long> timeMap = new HashMap<String, Long>();
+	private static final String SEPARATOR = "-----------------------------------------------------";
 
-	public static void printStackTrace(int num) {
-		if (Thread.currentThread() != null)
-			for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
-				System.out.println(ste);
-				num--;
-				if (num <= 0)
-					break;
+	public static void printStackTrace(int start, int end) {
+		if (Thread.currentThread() != null){
+			StackTraceElement[] stes = Thread.currentThread().getStackTrace();
+			if (start < 0) 
+				start = 0;
+			if (end >= stes.length) 
+				end = stes.length - 1;
+			if (end < start) 
+				end = start; 
+			else 
+				System.out.println(SEPARATOR);
+			for (int i = start; i <= end; i++){
+				System.out.println(stes[i]);
 			}
+			if (end >= start)
+				System.out.println(SEPARATOR);
+		}
+	}
+	
+	public static void printStackTrace(int num) {
+		printStackTrace(0, num - 1);
 	}
 	
 	public static void printCurrentLine(String... strs) {
@@ -78,7 +92,16 @@ public class Debugger implements PluginConstants {
 		System.out.println(str);
 		System.out.println(separator);
 	}
-
+	
+	public static<T> void printCurrentLine (T str){
+		String ste = Thread.currentThread().getStackTrace()[TRACE_LINE].toString();
+		String separator = new String(new char[ste.length()]).replace('\0', '_');
+		System.out.println(separator);
+		System.out.println(ste);
+		System.out.println(str);
+		System.out.println(separator);
+	}
+	
 	public static void printCurrentLine() {
 		System.out.println(Thread.currentThread().getStackTrace()[TRACE_LINE]);
 	}
@@ -324,24 +347,10 @@ public class Debugger implements PluginConstants {
 		System.out.println(String.format("%32s", Integer.toBinaryString(DO_ICQ)).replace(' ', '0') + " : DO_ICQ");
 
 		System.out.println(String.format("%32s", Integer.toBinaryString(DO_AVGINT)).replace(' ', '0') + " : DO_AVGINT");
-		System.out.println(
-				String.format("%32s", Integer.toBinaryString(DO_CEN2NPOLE)).replace(' ', '0') + " : DO_CEN2NPOLE");
-		System.out.println(
-				String.format("%32s", Integer.toBinaryString(DO_DIST_THOLD)).replace(' ', '0') + " : DO_DIST_THOLD");
-		System.out
-				.println(String.format("%32s", Integer.toBinaryString(DO_DIST_FT)).replace(' ', '0') + " : DO_DIST_FT");
-		// System.out.println(String.format("%32s",
-		// Integer.toBinaryString(DO_ALIGN1)).replace(' ', '0') + " :
-		// DO_ALIGN1");
-		// System.out.println(String.format("%32s",
-		// Integer.toBinaryString(DO_ALIGN2)).replace(' ', '0') + " :
-		// DO_ALIGN2");
+		
 		System.out
 				.println(String.format("%32s", Integer.toBinaryString(DO_SCATTER)).replace(' ', '0') + " : DO_SCATTER");
-		// System.out.println(String.format("%32s",
-		// Integer.toBinaryString(DO_HEAT1)).replace(' ', '0') + " : DO_HEAT1");
-		// System.out.println(String.format("%32s",
-		// Integer.toBinaryString(DO_HEAT2)).replace(' ', '0') + " : DO_HEAT2");
+		
 		System.out.println(
 				String.format("%32s", Integer.toBinaryString(DO_HEAT_CELL)).replace(' ', '0') + " : DO_HEAT_CELL");
 		System.out.println(
@@ -393,16 +402,6 @@ public class Debugger implements PluginConstants {
 
 		if ((options & DO_AVGINT) != 0)
 			System.out.println("DO_AVGINT");
-		if ((options & DO_CEN2NPOLE) != 0)
-			System.out.println("DO_CEN2NPOLE");
-		if ((options & DO_DIST_THOLD) != 0)
-			System.out.println("DO_DIST_THOLD");
-		if ((options & DO_DIST_FT) != 0)
-			System.out.println("DO_DIST_FT");
-		// if((options & DO_ALIGN1)!=0)
-		// System.out.println("DO_ALIGN1");
-		// if((options & DO_ALIGN2)!=0)
-		// System.out.println("DO_ALIGN2");
 		if ((options & DO_SCATTER) != 0)
 			System.out.println("DO_SCATTER");
 		// if((options & DO_HEAT1)!=0)

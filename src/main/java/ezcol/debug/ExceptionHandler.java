@@ -18,8 +18,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
-import com.sun.tools.javac.util.Pair;
-
 import ezcol.align.TurboRegMod;
 import ezcol.cell.CellData;
 import ezcol.main.PluginConstants;

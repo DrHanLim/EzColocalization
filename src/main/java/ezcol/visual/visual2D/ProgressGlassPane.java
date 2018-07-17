@@ -53,6 +53,8 @@ import java.util.Random;
 
 import javax.swing.JComponent;
 
+import ezcol.main.PluginStatic;
+
 @SuppressWarnings("serial")
 public class ProgressGlassPane extends JComponent{
     private static final int BAR_WIDTH = 200;
@@ -78,11 +80,14 @@ public class ProgressGlassPane extends JComponent{
     private float alpha=0.65f;
     private int oldProgress;
     private Random random;
-    private String[] tips = {"Do you know?\nYou could add \"x\" to intensity filters so that the number is relative to the average background of the same channel.",
-    						 "Do you know?\nYou could hold \"Shift\" while pressing any button to ONLY run on the current slice of phase contrast channel.",
+    private String[] tips = {"Do you know?\nYou could hold \"Shift\" while pressing the button to ONLY run on the current slice of phase contrast channel.",
     						 "Do you know?\nYou could send us an email by clicking the \"Email\" button at the bottom right corner.",
     						 "Do you know?\nPutting a tip here is inspired by video games.",
-    						 "Do you know?\nYou could hold \"Alt\" while pressing any button to boost the performance. (Warning: it might be unstable)"};
+    						 "Do you know?\nYou could hold \"Alt\" while pressing any button to boost the performance. (Warning: it might be unstable)",
+    						 "Do you know?\nTo learn more about the metric, click the name in the subtab of \"Metrics info\" in \"Analysis\"",
+    						 "Do you know?\nThere might be additional information when the cursor hovers over buttons or labels",
+    						 "Do you know?\nThis plugin is available on GitHub at https://github.com/DrHanLim/EzColocalization",
+    						 "Do you know?\nYou can set the parameters of background subtraction in \"Parameters...\" of \"Settings\" menu"};
     
     public ProgressGlassPane() {
         setBackground(Color.WHITE);

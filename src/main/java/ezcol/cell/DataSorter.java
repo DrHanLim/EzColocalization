@@ -177,7 +177,7 @@ public class DataSorter {
         sortIdx=new int[inputlength];
         for (int idx=0;idx<inputlength;idx++){
         	if(Double.isNaN(inputArr[idx]))
-              this.sortIdx[idx] = idx+sortIdx.length;
+              this.sortIdx[idx] = idx + sortIdx.length;
         	else
         	  this.sortIdx[idx] = idx;
         }

@@ -11,7 +11,7 @@ import javafx.util.Pair;
 
 public class MetricCalculator extends BasicCalculator {
 
-	public static final int DO_TOS = PluginConstants.RUN_TOSHM, DO_PCC = PluginConstants.DO_PCC,
+	public static final int DO_TOS = PluginConstants.RUN_TOS, DO_PCC = PluginConstants.DO_PCC,
 			DO_SRC = PluginConstants.DO_SRC, DO_MCC = PluginConstants.DO_MCC, DO_ICQ = PluginConstants.DO_ICQ,
 			DO_CUSTOM = PluginConstants.DO_CUSTOM, DO_AVGINT = PluginConstants.DO_AVGINT;
 
@@ -353,10 +353,10 @@ public class MetricCalculator extends BasicCalculator {
 	 * @return the metric value of the cell
 	 */
 	public double[] getMetrics(int i, int iCell) {
-		if (i < 0 || i >= DEFAULT_METRIC_NAMES.length || iCell < 0)
+		if (i < 0 || i >= DEFAULT_METRIC_ACRONYMS.length || iCell < 0)
 			return null;
 
-		switch (DEFAULT_METRIC_NAMES[i]) {
+		switch (DEFAULT_METRIC_ACRONYMS[i]) {
 		case SHOW_TOS_LINEAR:
 			if (tos != null && iCell < tos.length && tos[iCell] != null && tos[iCell].length > 0)
 				return new double[] { tos[iCell][0] };
@@ -411,10 +411,10 @@ public class MetricCalculator extends BasicCalculator {
 	 * @return true if it is calculated otherwise, false
 	 */
 	public boolean isMetrics(int i) {
-		if (i < 0 || i >= DEFAULT_METRIC_NAMES.length)
+		if (i < 0 || i >= DEFAULT_METRIC_ACRONYMS.length)
 			return false;
 
-		switch (DEFAULT_METRIC_NAMES[i]) {
+		switch (DEFAULT_METRIC_ACRONYMS[i]) {
 		case SHOW_TOS_LINEAR:
 			if (tos != null && tos.length > 0 && tos[0] != null && tos[0].length > 0)
 				return true;

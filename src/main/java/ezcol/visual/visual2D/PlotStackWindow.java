@@ -57,6 +57,7 @@ import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 import ij.util.Tools;
 
+/** This class is a slightly modified version of PlotWindow from ij.gui. **/
 @SuppressWarnings("serial")
 public class PlotStackWindow extends StackWindow implements ActionListener, ClipboardOwner, Runnable {
 

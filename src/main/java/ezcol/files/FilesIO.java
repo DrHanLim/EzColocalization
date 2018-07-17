@@ -20,6 +20,7 @@ import java.util.jar.JarFile;
 
 import javax.imageio.ImageIO;
 
+import ezcol.debug.Debugger;
 import ezcol.debug.ExceptionHandler;
 import ezcol.main.PluginStatic;
 import ij.IJ;
@@ -152,6 +153,21 @@ public class FilesIO {
 				}
 			}
 			return result.toArray(new String[result.size()]);
+			
+		}else if(dirURL.getProtocol().equals("file")) {
+			// test mode and the directory is pointed to the class in bin
+			File folder = new File(dirURL.getPath().substring(1, dirURL.getPath().indexOf("bin") + 4) + IMAGE_DIRECTORY);
+			File[] listOfFiles = folder.listFiles();
+
+			Set<String> result = new HashSet<String>(); // avoid duplicates in
+														// case it is a
+														// subdirectory
+		    for (int i = 0; i < listOfFiles.length; i++) {
+		      if (listOfFiles[i].isFile()) {
+		    	  result.add(listOfFiles[i].getName());
+		      }
+		    }
+		    return result.toArray(new String[result.size()]);
 		}
 
 		throw new UnsupportedOperationException("Cannot list files for URL " + dirURL);

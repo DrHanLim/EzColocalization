@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import ezcol.debug.ExceptionHandler;
 import ij.measure.Calibration;
 import ij.process.ImageProcessor;
 import ij.process.ShortProcessor;
@@ -70,12 +71,18 @@ public class CellDataProcessor {
 			if (chs[i] == null)
 				chs[i] = new ShortProcessor(width, height);
 		}
+		
+		int countCell = countMask2NumOfCell(cell);
 
-		if (countMask2NumOfCell(cell) == 0) {
+		if (countCell < 0) {
 			numOfCell = 1;
 			numOfPixel = new int[] { ic.getPixelCount() };
 			handleCellData(chs, rank);
-			// return false;
+		} else if (countCell == 0){
+			cellCs = null;
+			numOfPixel = null;
+			ExceptionHandler.addError(Thread.currentThread(), "No cell is found based on the selected filters.");
+			return false;
 		} else {
 			iniNumOfPixel();
 			pixelCs = new float[chs.length][][];
@@ -95,8 +102,9 @@ public class CellDataProcessor {
 	}
 
 	private int countMask2NumOfCell(ImageProcessor cell) {
+		numOfCell = 0;
 		if (cell == null)
-			return 0;
+			return -1;
 		int width = cell.getWidth();
 		int height = cell.getHeight();
 
@@ -105,7 +113,6 @@ public class CellDataProcessor {
 
 		pixelCount = cell.getPixelCount();
 		pixelMask = cell.getIntArray();
-		numOfCell = 0;
 		Set<Integer> setOfIDs = new HashSet<Integer>();
 		for (int w = 0; w < width; w++) {
 			for (int h = 0; h < height; h++) {

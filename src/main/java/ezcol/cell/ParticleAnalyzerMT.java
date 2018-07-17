@@ -2,15 +2,20 @@ package ezcol.cell;
 
 import java.awt.Frame;
 
+import ezcol.debug.Debugger;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.Macro;
+import ij.Prefs;
 import ij.WindowManager;
 import ij.gui.Roi;
 import ij.macro.Interpreter;
+import ij.measure.Measurements;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ParticleAnalyzer;
+import ij.plugin.filter.ThresholdToSelection;
 import ij.plugin.frame.RoiManager;
+import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
 
 //This is a thread safe particleanalyzer in terms of roiManager and resultswindow
@@ -85,5 +90,25 @@ public class ParticleAnalyzerMT extends ParticleAnalyzer {
 		}
 		if (showResultsWindow && showResults)
 			rt.addResults();
+	}
+	
+	public static boolean analyzeWithHole(ImageProcessor ip, RoiManager roiManager) {
+		ParticleAnalyzerMT cellParticles = new ParticleAnalyzerMT(SHOW_ROI_MASKS, 0, null, 0.0,
+				Double.POSITIVE_INFINITY);
+		cellParticles.setHideOutputImage(true);
+		if (!cellParticles.analyze(new ImagePlus("Thresholding", ip), ip))
+			return false;
+		ImagePlus countMask = cellParticles.getOutputImage();
+		ImageProcessor countProcessor = countMask.getProcessor();
+		ImageStatistics countStat = ImageStatistics.getStatistics(countProcessor, Measurements.MIN_MAX, null);
+		ThresholdToSelection tts = new ThresholdToSelection();
+		
+		for (double iCell = 0.5; iCell < countStat.max; iCell++) {
+			countProcessor.setThreshold(iCell, iCell + 1, ImageProcessor.NO_LUT_UPDATE);
+			Roi roi = tts.convert(countProcessor);
+			if (roi != null)
+				roiManager.add(countMask, roi, (int) (iCell + 0.5));
+		}
+		return true;
 	}
 }

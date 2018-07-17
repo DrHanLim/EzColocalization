@@ -317,7 +317,8 @@ public class StringCompiler {
 			defaultCode += "c" + i + " and ";
 
 		defaultCode += "c" + nChannels + " are arrays of pixel values of \n"
-				+ "		flourescence channels in the same cell \n" + "		Here is an exmaple of how to calculate \n"
+				+ "		fluorescence channels in the same cell \n" 
+				+ "		Here is an example of how to calculate \n"
 				+ "		" + (nChannels == 2 ? "Pearson's correlation coefficient" : nChannels + "-order moment")
 				+ " */ \n" + "	\n" + "		float[] c = c1.clone(); \n"
 				+ "		for (int i = 0; i < c.length ; i++){ \n";
@@ -501,9 +502,6 @@ public class StringCompiler {
 		options.addElement("-deprecation");
 		options.addElement("-classpath");
 		options.addElement(classpath);
-
-		Debugger.print(options);
-		System.out.println(classpath);
 		
 		Vector sources = new Vector();
 		sources.add(path);

@@ -9,7 +9,6 @@ import ezcol.debug.ExceptionHandler;
 import ezcol.main.PluginStatic;
 import ij.IJ;
 import ij.ImagePlus;
-import javafx.util.Pair;
 
 public class OutputWindow {
 
@@ -144,7 +143,7 @@ public class OutputWindow {
 	 * @param values a double array of metric value, the length will be considered as the number of values
 	 * @param name, the name of the metric
 	 */
-	public void addMetric(double[] values, Pair<String,String> interpretation){
+	public void addMetric(double[] values, String[] interpretation){
 		if(values == null)
 			return;
 		
@@ -161,7 +160,7 @@ public class OutputWindow {
 	 * @param name, the name of the metric
 	 */
 	public void addMetric(double[] values, String name){
-		addMetric(values, new Pair<String,String>(name,null));
+		addMetric(values, new String[]{name, null});
 	}
 	
 	/**
@@ -169,7 +168,7 @@ public class OutputWindow {
 	 * @param values a double array of metric value, the length will be considered as the number of values
 	 */
 	public void addMetric(double[] values){
-		addMetric(values, new Pair<String,String>(customName+" "+(moreStats.size()+1),customString));
+		addMetric(values, new String[]{customName+" "+(moreStats.size()+1),customString});
 		customName = CUSTOM_NAME;
 		customString = CUSTOM_STRING;
 	}
@@ -226,7 +225,7 @@ class ImgLabel{
 }
 
 class Stats{
-    Stats(int num, double mean, double std, double median, Pair<String, String> metric) {
+    Stats(int num, double mean, double std, double median, String[] metric) {
        this.num = num;
        this.mean = mean;
        this.std = std;
@@ -235,8 +234,8 @@ class Stats{
     	   this.name = null;
 	       this.interpretation = null;
        }else{
-	       this.name = metric.getKey();
-	       this.interpretation = metric.getValue();
+	       this.name = metric[0];
+	       this.interpretation = metric[1];
        }
     }
 
@@ -254,6 +253,5 @@ class Stats{
     private String name;
     private String interpretation;
 }
-
 
 

@@ -3,10 +3,9 @@ package ezcol.main;
 import ij.IJ;
 import ij.ImageListener;
 import ij.ImagePlus;
-import ij.Macro;
 import ij.Prefs;
 import ij.WindowManager;
-import ij.gui.ImageCanvas;
+import ij.gui.GenericDialog;
 import ij.gui.ImageWindow;
 import ij.gui.Overlay;
 import ij.gui.Roi;
@@ -15,6 +14,7 @@ import ij.plugin.BrowserLauncher;
 import ij.plugin.OverlayLabels;
 import ij.plugin.frame.Recorder;
 import ij.plugin.frame.RoiManager;
+import ij.plugin.frame.ThresholdAdjuster;
 import ij.process.ImageProcessor;
 import ij.util.Java2;
 import ij.process.AutoThresholder.Method;
@@ -38,11 +38,13 @@ import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JTabbedPane;
 
 import java.awt.Insets;
+import java.awt.Panel;
 import java.awt.Rectangle;
 
 import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComboBox;
+import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
 
 import java.awt.Color;
@@ -54,7 +56,9 @@ import java.awt.Toolkit;
 import java.awt.Window;
 
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
+import javax.swing.LookAndFeel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -83,6 +87,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.awt.image.ColorModel;
 import java.awt.event.ActionEvent;
 
 import javax.swing.JSlider;
@@ -108,16 +113,27 @@ import java.util.Set;
 import java.util.Vector;
 import java.beans.PropertyChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
 import javax.swing.event.UndoableEditEvent;
 import javax.swing.event.UndoableEditListener;
+import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultFormatterFactory;
 import javax.swing.text.NumberFormatter;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
+import javax.swing.text.html.HTML;
+import javax.swing.text.html.HTMLDocument;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
 
 import ezcol.align.BackgroundProcessor;
 import ezcol.cell.CellFilterDialog;
+import ezcol.cell.CellFinder;
+import ezcol.cell.ParticleAnalyzerMT;
 import ezcol.debug.Debugger;
 import ezcol.debug.ExceptionHandler;
 import ezcol.files.FilesIO;
@@ -133,7 +149,7 @@ import javax.swing.event.ChangeEvent;
  *
  */
 public class GUI extends PluginStatic
-		implements ActionListener, ChangeListener, ImageListener, WindowListener /*, PropertyChangeListener*/ {
+		implements ActionListener, ChangeListener, ImageListener, WindowListener /* , PropertyChangeListener */ {
 
 	private static GUI staticGUI;
 	private static boolean adaptZoom = true;
@@ -172,7 +188,9 @@ public class GUI extends PluginStatic
 	private JComboBox<?>[] alignTholdCombbxes = new JComboBox<?>[alignThold_combs.length];
 	private JButton doAlignmentBtn, resetAlignmentBtn, previewTholdBtn;
 	private boolean showThold;
-	private static final String[] PREVIEW_THOLD = { "Show threshold(s)", "Hide threshold(s)" };
+	private static final String[] PREVIEW_THOLD = { "Show Threshold(s)", "Hide Threshold(s)" };
+	// Add in 1.1.0 to save current Overlays on the images
+	private Overlay[] currentOverlays = new Overlay[imps.length];
 
 	// cell filters UI
 	private JTextField[] filterSizeTexts = new JTextField[SIZE_FILTERS.length];
@@ -203,14 +221,14 @@ public class GUI extends PluginStatic
 	// Global Calibration
 
 	// indexes for subtabs
-	private static final int METRICSUBTAB = 0, MTOSSUBTAB = 2, DISTSUBTAB = 3, OTHERSUBTAB = 1, TOSSUBTAB = 2;
+	private static final int METRICSUBTAB = 0, INFOSUBTAB = 1, CUSTOMSUBTAB = 2;
 	// four colors are the colors of
 	// 1.metricSubTab, 2.mTOSSubTab, 3.distanceSubTab, 4.otherSubTab
 	// The order should be the same as the indexes above
 	public static final Color[] SUBTABCOLORS = { new Color(230, 230, 250), new Color(250, 235, 215),
-			new Color(255, 255, 224), new Color(240, 255, 240) };
-	public static final Color[] SUBLABELCOLORS = { new Color(150, 150, 255), Color.ORANGE, Color.YELLOW,
-			new Color(100, 255, 100) };
+			new Color(240, 255, 240), new Color(255, 255, 224) };
+	public static final Color[] SUBLABELCOLORS = { new Color(150, 150, 255), Color.ORANGE, new Color(100, 255, 100),
+			Color.YELLOW };
 	// Analysis Tab
 	private JTabbedPane analysisSubTabs;
 	// analysis operator is used to run the analyses
@@ -218,29 +236,60 @@ public class GUI extends PluginStatic
 	// outputs UI
 	public static final int[] METRICS_2D_ONLY = { PCC, SRCC };
 	private JPanel metricSubTab;
-	private JRadioButton[][] metricTholdRadiobtns = new JRadioButton[METRICNAMES.length][METRIC_THOLDS.length];
-	private ButtonGroup[] metricRadioGroup = new ButtonGroup[METRICNAMES.length];
+	private JRadioButton[][] metricTholdRadiobtns = new JRadioButton[METRICACRONYMS.length][METRIC_THOLDS.length];
+	private ButtonGroup[] metricRadioGroup = new ButtonGroup[METRICACRONYMS.length];
 	private JLabel[] lblMetricTholds = new JLabel[METRIC_THOLDS.length];
-	private JSpinner[][] allFTSpinners = new JSpinner[MAX_NREPORTERS][METRICNAMES.length];
+	private JSpinner[][] allFTSpinners = new JSpinner[MAX_NREPORTERS][METRICACRONYMS.length];
 	private JLabel[] lblFTunits = new JLabel[allFTSpinners.length];
 
-	private JCheckBox[] metricChckbxes = new JCheckBox[METRICNAMES.length];
+	private JCheckBox[] metricChckbxes = new JCheckBox[METRICACRONYMS.length];
 	private JCheckBox[] otherChckbxes = new JCheckBox[OTHERNAMES.length];
 
 	// Custom UI
 	public static final int SUCCESS = 0, FAILURE = 1, RUN = 2, SKIP = 3;
 	private static final String[] CUSTOM_STATUS = { "Succeeded", "Failed", "Run", "Skip" };
 	private static final Color[] CUSTOM_COLORS = { new Color(0, 128, 0), Color.RED, Color.BLACK, Color.BLUE };
-	private static final String CUSTOM_URL = "https://docs.oracle.com/javase/7/docs/api/overview-summary.html";
-	private JPanel othersubTab;
-	private JScrollPane customCodeScrollpnl;
+	private static final String CUSTOM_URL = "https://docs.oracle.com/javase/tutorial/java/data/beyondmath.html";
+	private JPanel customSubTab;
+	private JScrollPane customCodeScrollpn;
 	private JTextArea customCodeTextbx;
-	private JButton runCustom, resetCustom, helpCustom;
+	private JButton runCustomBtn, resetCustomBtn, helpCustomBtn;
 	private JCheckBox customMetricChckbxes;
 
 	// Output UI
 	private JCheckBox[] outputMetricChckbxes = new JCheckBox[OUTPUTMETRICS.length];
 	private JCheckBox[] outputOptChckbxes = new JCheckBox[OUTPUTOTHERS.length];
+
+	private JPanel infoSubTab;
+	private JScrollPane infoScrollpn;
+	private JEditorPane infoTextpn;
+	private String[][] extraInfo = {
+
+			{ "Costes' Algorithm",
+					"Costes' algorithm is an automated algorithm for the selection of thresholds "
+							+ "for two reporter channels. It is typically used in conjunction with MCC.",
+					"https://www.sciencedirect.com/science/article/pii/S0006349504744392?via%3Dihub" },
+
+			{"Top Percentile of Pixels Threshold (FT)", 
+				"The percentage of pixels identified as being above the threshold for a given channel. "
+				+ "For example an FT of 10% will identify the top 10% of pixels as above threshold.\n",
+				"http://bio.biologists.org/content/5/12/1882.long"
+			},
+			
+			{ "Histogram",
+					"The histogram provided is a column graph where the height of each column "
+							+ "is proportional to the number of values within each sub-range of values in the sample.\n",
+					"https://en.wikipedia.org/wiki/Histogram" },
+
+			{ "Mask",
+					"Masks are binary images with an inverting lookup table (LUT) "
+							+ "that are used to visualize separate objects from the background.\n",
+					"https://imagej.nih.gov/ij/docs/guide/146-29.html#infobox:InvertedLutMask" },
+
+			{ "Region of Interest (ROI)", "An ROI is a subregion within an image that is identified for analysis.\n",
+					"https://imagej.net/ROIs" }
+
+	};
 
 	// about tab
 	private static final String ABOUT_TEXT = "Please refer to and cite:\n" + "Stauffer, W., Sheng, H., and Lim, H.N.\n"
@@ -249,13 +298,14 @@ public class GUI extends PluginStatic
 	private JButton email;
 	// please double check that pluginName,if changed, doesn't contain reserved
 	// symbols
-	private static final String URIEmail = "mailto:" + CONTACT 
-										+ "?subject=Question%20about%20your%20" 
-										+ pluginName.replaceAll(" ", "%20") 
-										+ "%20plugin";
+	private static final String URIEmail = "mailto:" + CONTACT + "?subject=Question%20about%20your%20"
+			+ pluginName.replaceAll(" ", "%20") + "%20plugin";
 
 	// progress glasspane
 	private ProgressGlassPane progressGlassPane;
+
+	// make a copy of Recorder.record to bypass the annoying additional lines
+	private volatile boolean recorderRecord;
 
 	public GUI() {
 
@@ -302,18 +352,11 @@ public class GUI extends PluginStatic
 	private void gui() {
 
 		mainframe = new JFrame(pluginName);
-		if (!IJ.isWindows())
-			mainframe.setSize(500, 630);
-		else
-			mainframe.setSize(420, 670);
-		mainframe.setLocation(0,
-				(int) (Toolkit.getDefaultToolkit().getScreenSize().getHeight() / 2 - mainframe.getHeight() / 2));
+		mainframe.setSize(0, 0);
 		mainframe.setResizable(false);
 		if (FilesIO.getResource("coloc.gif") != null)
 			mainframe.setIconImage(new ImageIcon(FilesIO.getResource("coloc.gif")).getImage());
 		mainframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		Rectangle ijBounds = getIJScreenBounds();
-		mainframe.setBounds(100 + ijBounds.x, 100 + ijBounds.y, mainframe.getWidth(), mainframe.getHeight());
 
 		// This is the content panel
 		superPanel = new JPanel();
@@ -378,9 +421,6 @@ public class GUI extends PluginStatic
 		updateSelection();
 
 		updateTicked();
-		if (nbImgs != 0)
-			adaptZoom();
-
 		// initialize input images options
 		// add none as a chioce to all input combo boxes
 		/**
@@ -389,8 +429,27 @@ public class GUI extends PluginStatic
 		 */
 		ImagePlus.addImageListener(this);
 
+		// Sometimes the looking of the plugin changes for no reason
+		// Make sure it's good here
+		LookAndFeel thisLook = UIManager.getLookAndFeel();
+		Java2.setSystemLookAndFeel();
+		try {
+			UIManager.setLookAndFeel(thisLook);
+		} catch (UnsupportedLookAndFeelException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			IJ.log("" + e1);
+		}
+		
 		mainframe.pack();
+		mainframe.setLocation(0, (int) (getIJScreenBounds().getHeight() / 2 - mainframe.getHeight() / 2));
 		mainframe.setVisible(true);
+
+		// adaptZoom after the main frame window is displayed to get proper
+		// position.
+		if (nbImgs != 0)
+			adaptZoom();
+
 	}
 
 	private void mainMenu() {
@@ -414,22 +473,18 @@ public class GUI extends PluginStatic
 			menuItem.getAccessibleContext().setAccessibleDescription(menuString);
 			menuItem.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					
+
+					LookAndFeel thisLook = UIManager.getLookAndFeel();
 					Java2.setSystemLookAndFeel();
-					
 					try {
-						UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
-					} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
-							| UnsupportedLookAndFeelException e1) {
+						UIManager.setLookAndFeel(thisLook);
+					} catch (UnsupportedLookAndFeelException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
-						IJ.log(""+e1);
+						IJ.log("" + e1);
 					}
-					
+
 					IJ.doCommand(((JMenuItem) (e.getSource())).getText());
-					
-					
-					
 				}
 			});
 			menu.add(menuItem);
@@ -440,13 +495,6 @@ public class GUI extends PluginStatic
 			menuItem.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					/*
-					 * int i = 1; while (true) { try { if (FilesIO.getImagePlus(
-					 * "Sample image C" + (i++) + ".tif", true) == null) break;
-					 * else IJ.wait(50); } catch (Exception e1) { // TODO
-					 * Auto-generated catch block IJ.error(
-					 * "Error while loading sample images"); break; } }
-					 */
 					try {
 						FilesIO.openTiffs(true);
 					} catch (IOException | URISyntaxException e1) {
@@ -480,8 +528,8 @@ public class GUI extends PluginStatic
 				public void actionPerformed(ActionEvent e) {
 					// TODO Auto-generated method stub
 					String dir = saveAllWindows();
-					if (Recorder.record) {
-						MacroHandler.saveRecorder(dir);
+					if (recorderRecord) {
+						MacroHandler.recordSaveAll(dir);
 					}
 				}
 
@@ -495,8 +543,9 @@ public class GUI extends PluginStatic
 				public void actionPerformed(ActionEvent e) {
 					// TODO Auto-generated method stub
 					closeAllWindows();
-					if (Recorder.record) {
-						MacroHandler.closeRecorder();
+					updateImgList(null, null);
+					if (recorderRecord) {
+						MacroHandler.recordCloseAll();
 					}
 				}
 
@@ -537,7 +586,7 @@ public class GUI extends PluginStatic
 			menu.getAccessibleContext().setAccessibleDescription("Stack related functions incorporated from ImageJ");
 			menuBar.add(menu);
 
-			menuStrings = new String[] { "Images to Stack", "Concatenate...", "Import Sequence..." };
+			menuStrings = new String[] { "Images to Stack", "Concatenate...", "Image Sequence..." };
 			// a group of JMenuItems
 			for (String menuString1 : menuStrings) {
 				menuItem = new JMenuItem(menuString1);
@@ -591,7 +640,17 @@ public class GUI extends PluginStatic
 				}
 			});
 			menu.add(menuItem);
-			
+
+			// Add in 1.1.0 to change previously unchangable parameters
+			menuItem = new JMenuItem("Parameters...");
+			menuItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					setParameters();
+				}
+			});
+			menu.add(menuItem);
+
 			menuItem = new JMenuItem("Plugin Info...");
 			menuItem.addActionListener(new ActionListener() {
 				@Override
@@ -616,8 +675,8 @@ public class GUI extends PluginStatic
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
 				String dir = saveAllWindows();
-				if (Recorder.record) {
-					MacroHandler.saveRecorder(dir);
+				if (recorderRecord) {
+					MacroHandler.recordSaveAll(dir);
 				}
 			}
 
@@ -630,8 +689,9 @@ public class GUI extends PluginStatic
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
 				closeAllWindows();
-				if (Recorder.record) {
-					MacroHandler.closeRecorder();
+				updateImgList(null, null);
+				if (recorderRecord) {
+					MacroHandler.recordCloseAll();
 				}
 			}
 
@@ -787,6 +847,11 @@ public class GUI extends PluginStatic
 					if (item.ID == ImageInfo.NONE_ID)
 						return;
 					int ipic = (int) img.getClientProperty("index");
+
+					// Manually adjusting the threshold, no need to autoupdate
+					if (getMethod(ALLTHOLDS[alignThold_combs[ipic]]) == null)
+						return;
+
 					if (e.getStateChange() == ItemEvent.SELECTED) {
 						// If the same image is selected for a channel with
 						// higher priority
@@ -808,7 +873,7 @@ public class GUI extends PluginStatic
 							}
 						}
 						if (index == -1)
-							resetThr(item);
+							resetThr(ipic, item);
 						else if (index < ipic)
 							updateThr(index, item);
 					}
@@ -894,13 +959,6 @@ public class GUI extends PluginStatic
 		gbc_btnPreviewThold.gridy = 14;
 		inputTab.add(previewTholdBtn, gbc_btnPreviewThold);
 
-		/*
-		 * JLabel label_6 = new JLabel(" "); GridBagConstraints gbc_label_6 =
-		 * new GridBagConstraints(); gbc_label_6.insets = new Insets(0, 0, 0,
-		 * 0); gbc_label_6.gridx = 4; gbc_label_6.gridy = 15;
-		 * inputTab.add(label_6, gbc_label_6);
-		 */
-
 		// Button to preview alignment
 		doAlignmentBtn = new JButton("Preview");
 		doAlignmentBtn.addActionListener(this);
@@ -964,7 +1022,8 @@ public class GUI extends PluginStatic
 			filterTab.add(lblCourseSizepixels, gbc_lblCourseSizepixels);
 
 			filterSizeTexts[iFilter] = new JTextField();
-			filterSizeTexts[iFilter].setText(getFilterRange(filterMinSize_texts[iFilter], filterMaxSize_texts[iFilter]));
+			filterSizeTexts[iFilter]
+					.setText(getFilterRange(filterMinSize_texts[iFilter], filterMaxSize_texts[iFilter]));
 			GridBagConstraints gbc_textField = new GridBagConstraints();
 			gbc_textField.insets = new Insets(0, 5, 5, 5);
 			gbc_textField.gridwidth = 2;
@@ -1016,7 +1075,8 @@ public class GUI extends PluginStatic
 			filterTab.add(filterCombbxes[iFilter], gbc_comboBox_filters);
 
 			filterRangeTexts[iFilter] = new JTextField();
-			filterRangeTexts[iFilter].setText(getFilterRange(filterMinRange_texts[iFilter], filterMaxRange_texts[iFilter]));
+			filterRangeTexts[iFilter]
+					.setText(getFilterRange(filterMinRange_texts[iFilter], filterMaxRange_texts[iFilter]));
 			GridBagConstraints gbc_TextField_filterRanges = new GridBagConstraints();
 			gbc_TextField_filterRanges.gridwidth = 2;
 			gbc_TextField_filterRanges.insets = new Insets(0, 5, 5, 5);
@@ -1115,7 +1175,8 @@ public class GUI extends PluginStatic
 				heatmapColorCombbxes[iHeat] = new JComboBox<String>(HEATMAPS);
 				heatmapColorCombbxes[iHeat].setSelectedIndex(heatmapColor_combs[iHeat]);
 				GridBagConstraints gbc_comboBox_color = new GridBagConstraints();
-				gbc_comboBox_color.gridwidth = 4;
+				//Change in 1.1.0 from 4 to 3 to avoid major widht change between 2 and 3 reporters
+				gbc_comboBox_color.gridwidth = 3;
 				gbc_comboBox_color.insets = new Insets(5, 5, 5, 5);
 				gbc_comboBox_color.fill = GridBagConstraints.HORIZONTAL;
 				gbc_comboBox_color.gridx = 3;
@@ -1157,15 +1218,16 @@ public class GUI extends PluginStatic
 			;
 			visualTab.add(scatterplotChckbx, gbc_chckbxPISP);
 
-			/*JLabel lblScatterNote = new JLabel(" (Use distribution to dictate metric choice)");
-			GridBagConstraints gbc_label_3 = new GridBagConstraints();
-			gbc_label_3.gridwidth = 6;
-			gbc_label_3.insets = new Insets(0, 5, 5, 0);
-			gbc_label_3.anchor = GridBagConstraints.NORTHWEST;
-			gbc_label_3.gridx = 1;
-			gbc_label_3.gridy = 8 + heatmapColor_combs.length;
-			;
-			visualTab.add(lblScatterNote, gbc_label_3);*/
+			/*
+			 * JLabel lblScatterNote = new JLabel(
+			 * " (Use distribution to dictate metric choice)");
+			 * GridBagConstraints gbc_label_3 = new GridBagConstraints();
+			 * gbc_label_3.gridwidth = 6; gbc_label_3.insets = new Insets(0, 5,
+			 * 5, 0); gbc_label_3.anchor = GridBagConstraints.NORTHWEST;
+			 * gbc_label_3.gridx = 1; gbc_label_3.gridy = 8 +
+			 * heatmapColor_combs.length; ; visualTab.add(lblScatterNote,
+			 * gbc_label_3);
+			 */
 
 			JSeparator separator = new JSeparator();
 			separator.setForeground(Color.BLACK);
@@ -1307,7 +1369,27 @@ public class GUI extends PluginStatic
 		// New analysisSubTab
 		analysisSubTabs = new JTabbedPane(JTabbedPane.TOP);
 		analysisTab.add(analysisSubTabs);
+		// addTabs
+		tabs.insertTab("Analysis", null, analysisTab, null, ANALYSISTAB);
 
+		// Add in 1.1.0 to group metricSubTab content in a separate function
+		metricSubTab();
+		analysisSubTabs.insertTab("Analysis Metrics", null, metricSubTab, null, METRICSUBTAB);
+		analysisSubTabs.setBackgroundAt(METRICSUBTAB, SUBLABELCOLORS[METRICSUBTAB]);
+		// Add in 1.1.0 for info regarding metric acronyms
+		infoSubTab();
+		analysisSubTabs.insertTab("Metrics Info", null, infoSubTab, null, INFOSUBTAB);
+		analysisSubTabs.setBackgroundAt(INFOSUBTAB, SUBLABELCOLORS[INFOSUBTAB]);
+
+		// Add in 1.1.0 to group customSubTab content in a separate function
+		customSubTab();
+		analysisSubTabs.insertTab("Custom", null, customSubTab, null, CUSTOMSUBTAB);
+		analysisSubTabs.setBackgroundAt(CUSTOMSUBTAB, SUBLABELCOLORS[CUSTOMSUBTAB]);
+
+		// analysisTab ends here
+	}
+
+	private void metricSubTab() {
 		metricSubTab = new JPanel();
 		metricSubTab.setBackground(SUBTABCOLORS[METRICSUBTAB]);
 
@@ -1319,13 +1401,6 @@ public class GUI extends PluginStatic
 		gbl_panel_metricSubTab.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 				0.0, 0.0, 0.0, Double.MIN_VALUE };
 		metricSubTab.setLayout(gbl_panel_metricSubTab);
-
-		/*
-		 * JLabel spacer6 = new JLabel(" "); GridBagConstraints gbc_label_7 =
-		 * new GridBagConstraints(); gbc_label_7.insets = new Insets(0, 0, 5,
-		 * 5); gbc_label_7.gridx = 3; gbc_label_7.gridy = 0;
-		 * metricSubTab.add(spacer6, gbc_label_7);
-		 */
 
 		JLabel lblColocalizationMetrics = new JLabel("Colocalization metrics");
 		lblColocalizationMetrics.setFont(new Font("Lucida Grande", Font.PLAIN, 15));
@@ -1367,10 +1442,11 @@ public class GUI extends PluginStatic
 			metricSubTab.add(lblFTunits[ipic], gbc_lblMetricTholdsFT2);
 		}
 
-		for (int iMetric = 0; iMetric < METRICNAMES.length; iMetric++) {
+		for (int iMetric = 0; iMetric < METRICACRONYMS.length; iMetric++) {
 
-			metricChckbxes[iMetric] = new JCheckBox(METRICNAMES[iMetric]);
+			metricChckbxes[iMetric] = new JCheckBox(METRICACRONYMS[iMetric]);
 			metricChckbxes[iMetric].setBackground(SUBTABCOLORS[METRICSUBTAB]);
+			metricChckbxes[iMetric].setToolTipText(METRICNAMES[iMetric]);
 			GridBagConstraints gbc_chckbxNewCheckBox_3 = new GridBagConstraints();
 			gbc_chckbxNewCheckBox_3.anchor = GridBagConstraints.WEST;
 			gbc_chckbxNewCheckBox_3.insets = new Insets(5, 5, 5, 5);
@@ -1490,15 +1566,6 @@ public class GUI extends PluginStatic
 		gbc_separator.gridy = 10;
 		metricSubTab.add(separator, gbc_separator);
 
-		/*
-		 * JLabel lblResults = new JLabel("Results"); lblResults.setFont(new
-		 * Font("Lucida Grande", Font.PLAIN, 15)); GridBagConstraints
-		 * gbc_lblResults = new GridBagConstraints(); gbc_lblResults.insets =
-		 * new Insets(0, 0, 5, 0); gbc_lblResults.gridwidth = 8;
-		 * gbc_lblResults.gridx = 0; gbc_lblResults.gridy = 11;
-		 * metricSubTab.add(lblResults, gbc_lblResults);
-		 */
-
 		JLabel lblForSelectedMetrics = new JLabel("For values of selected metric(s):");
 		lblForSelectedMetrics.setFont(new Font("Dialog", Font.PLAIN, 13));
 		GridBagConstraints gbc_lblForSelectedMetrics = new GridBagConstraints();
@@ -1522,13 +1589,6 @@ public class GUI extends PluginStatic
 			metricSubTab.add(outputMetricChckbxes[i], gbc_chckbxNewCheckBox_14);
 		}
 
-		/*
-		 * JLabel label_19 = new JLabel(" "); GridBagConstraints gbc_label_19 =
-		 * new GridBagConstraints(); gbc_label_19.insets = new Insets(0, 0, 5,
-		 * 5); gbc_label_19.gridx = 4; gbc_label_19.gridy = 7;
-		 * outputTab.add(label_19, gbc_label_19);
-		 */
-
 		JLabel lblForCellIdentification = new JLabel("For cell identification function:");
 		lblForCellIdentification.setFont(new Font("Dialog", Font.PLAIN, 13));
 		GridBagConstraints gbc_lblForCellIdentification = new GridBagConstraints();
@@ -1551,10 +1611,12 @@ public class GUI extends PluginStatic
 			gbc_chckbxRegionsOfInterest.gridy = 14 + i / NUMOFCOLUMNS;
 			metricSubTab.add(outputOptChckbxes[i], gbc_chckbxRegionsOfInterest);
 		}
+	}
 
+	private void customSubTab() {
 		// Custom function
-		othersubTab = new JPanel();
-		othersubTab.setBackground(SUBTABCOLORS[OTHERSUBTAB]);
+		customSubTab = new JPanel();
+		customSubTab.setBackground(SUBTABCOLORS[CUSTOMSUBTAB]);
 
 		GridBagLayout gbl_panel_9 = new GridBagLayout();
 		gbl_panel_9.columnWidths = new int[] { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -1562,7 +1624,7 @@ public class GUI extends PluginStatic
 		gbl_panel_9.columnWeights = new double[] { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
 		gbl_panel_9.rowWeights = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 				Double.MIN_VALUE };
-		othersubTab.setLayout(gbl_panel_9);
+		customSubTab.setLayout(gbl_panel_9);
 
 		JLabel lblWriteYourOwn = new JLabel("Write your own function in Java below");
 		lblWriteYourOwn.setBorder(BorderFactory.createLineBorder(Color.BLACK));
@@ -1571,11 +1633,11 @@ public class GUI extends PluginStatic
 		gbc_lblWriteYourOwn.insets = new Insets(0, 0, 5, 0);
 		gbc_lblWriteYourOwn.gridx = 0;
 		gbc_lblWriteYourOwn.gridy = 1;
-		othersubTab.add(lblWriteYourOwn, gbc_lblWriteYourOwn);
+		customSubTab.add(lblWriteYourOwn, gbc_lblWriteYourOwn);
 
 		customMetricChckbxes = new JCheckBox("", custom_chck);
 		customMetricChckbxes.setHorizontalAlignment(JCheckBox.CENTER);
-		customMetricChckbxes.setBackground(SUBTABCOLORS[OTHERSUBTAB]);
+		customMetricChckbxes.setBackground(SUBTABCOLORS[CUSTOMSUBTAB]);
 		if (custom_chck)
 			setCustomStatus(RUN);
 		else
@@ -1587,7 +1649,7 @@ public class GUI extends PluginStatic
 		// gbc_lblchckbxCustom.anchor = GridBagConstraints.WEST;
 		gbc_lblchckbxCustom.gridx = 0;
 		gbc_lblchckbxCustom.gridy = 2;
-		othersubTab.add(customMetricChckbxes, gbc_lblchckbxCustom);
+		customSubTab.add(customMetricChckbxes, gbc_lblchckbxCustom);
 
 		customCodeTextbx = new JTextArea();
 		// customCode.setSize(tabWidth1,subTabHeight);
@@ -1599,9 +1661,9 @@ public class GUI extends PluginStatic
 		customCodeTextbx.setTabSize(StringCompiler.tabSize);
 		// customCode.setPreferredSize(new Dimension(356, 112));
 
-		customCodeScrollpnl = new JScrollPane(customCodeTextbx, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+		customCodeScrollpn = new JScrollPane(customCodeTextbx, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
 				JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-		customCodeScrollpnl.setPreferredSize(new Dimension(356, 112));
+		customCodeScrollpn.setPreferredSize(new Dimension(0, 0));
 
 		GridBagConstraints gbc_textArea = new GridBagConstraints();
 		gbc_textArea.gridheight = 8;
@@ -1610,7 +1672,7 @@ public class GUI extends PluginStatic
 		gbc_textArea.fill = GridBagConstraints.BOTH;
 		gbc_textArea.gridx = 0;
 		gbc_textArea.gridy = 3;
-		othersubTab.add(customCodeScrollpnl, gbc_textArea);
+		customSubTab.add(customCodeScrollpn, gbc_textArea);
 
 		// The following block of code is retrieved from
 		// https://web.archive.org/web/20100114122417/http://exampledepot.com/egs/javax.swing.undo/UndoText.html
@@ -1654,42 +1716,142 @@ public class GUI extends PluginStatic
 			customCodeTextbx.getInputMap().put(KeyStroke.getKeyStroke("ctrl Y"), "Redo");
 		}
 
-		runCustom = new JButton("Compile");
-		runCustom.addActionListener(this);
+		runCustomBtn = new JButton("Compile");
+		runCustomBtn.addActionListener(this);
 		GridBagConstraints gbc_btn_runCustom = new GridBagConstraints();
 		gbc_btn_runCustom.gridwidth = 2;
 		gbc_btn_runCustom.insets = new Insets(10, 10, 10, 10);
 		gbc_btn_runCustom.gridx = 0;
 		gbc_btn_runCustom.gridy = 12;
-		othersubTab.add(runCustom, gbc_btn_runCustom);
+		customSubTab.add(runCustomBtn, gbc_btn_runCustom);
 
-		resetCustom = new JButton("Reset");
-		resetCustom.addActionListener(this);
+		resetCustomBtn = new JButton("Reset");
+		resetCustomBtn.addActionListener(this);
 		GridBagConstraints gbc_btn_resetCustom = new GridBagConstraints();
 		gbc_btn_resetCustom.gridwidth = 2;
 		gbc_btn_resetCustom.insets = new Insets(10, 10, 10, 10);
 		gbc_btn_resetCustom.gridx = 3;
 		gbc_btn_resetCustom.gridy = 12;
-		othersubTab.add(resetCustom, gbc_btn_resetCustom);
+		customSubTab.add(resetCustomBtn, gbc_btn_resetCustom);
 
-		helpCustom = new JButton("Help");
-		helpCustom.addActionListener(this);
+		helpCustomBtn = new JButton("Resource");
+		helpCustomBtn.addActionListener(this);
 		GridBagConstraints gbc_btn_helpCustom = new GridBagConstraints();
 		gbc_btn_helpCustom.gridwidth = 2;
 		gbc_btn_helpCustom.insets = new Insets(10, 10, 10, 10);
 		gbc_btn_helpCustom.gridx = 6;
 		gbc_btn_helpCustom.gridy = 12;
-		othersubTab.add(helpCustom, gbc_btn_helpCustom);
+		customSubTab.add(helpCustomBtn, gbc_btn_helpCustom);
+	}
 
-		// addTabs
-		tabs.insertTab("Analysis", null, analysisTab, null, ANALYSISTAB);
-		analysisSubTabs.insertTab("Analysis metrics", null, metricSubTab, null, METRICSUBTAB);
-		analysisSubTabs.setBackgroundAt(METRICSUBTAB, SUBLABELCOLORS[METRICSUBTAB]);
+	private void infoSubTab() {
+		infoSubTab = new JPanel();
+		infoSubTab.setBackground(SUBTABCOLORS[INFOSUBTAB]);
 
-		analysisSubTabs.insertTab("Custom", null, othersubTab, null, OTHERSUBTAB);
-		analysisSubTabs.setBackgroundAt(OTHERSUBTAB, SUBLABELCOLORS[OTHERSUBTAB]);
+		GridBagLayout gb_info_panel_1 = new GridBagLayout();
+		gb_info_panel_1.columnWidths = new int[] { 0, 0, 0 };
+		gb_info_panel_1.rowHeights = new int[] { 0, 0, 0 };
+		gb_info_panel_1.columnWeights = new double[] { Double.MIN_VALUE, 1.0, Double.MIN_VALUE };
+		gb_info_panel_1.rowWeights = new double[] { Double.MIN_VALUE, 1.0, Double.MIN_VALUE };
+		infoSubTab.setLayout(gb_info_panel_1);
 
-		// analysisTab ends here
+		infoTextpn = new JEditorPane();
+		infoTextpn.setEditable(false);
+		infoTextpn.addHyperlinkListener(new HyperlinkListener() {
+			@Override
+			public void hyperlinkUpdate(HyperlinkEvent e) {
+				if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED)
+					try {
+						BrowserLauncher.openURL(e.getURL().toString());
+					} catch (IOException ie) {
+						IJ.error(e.getURL().toString() + " cannot be opened");
+					}
+			}
+		});
+
+		StyledDocument doc = new HTMLDocument();
+		String newline = "\n";
+
+		infoTextpn.setContentType("text/html");
+		infoTextpn.setText("<html>" + "</html>"); // Document text is provided
+													// below.
+		doc = (HTMLDocument) infoTextpn.getDocument();
+
+		Style style;
+		style = doc.addStyle("Metric Name", null);
+		StyleConstants.setForeground(style, Color.RED);
+		StyleConstants.setBold(style, true);
+		StyleConstants.setFontFamily(style, "Arial Black");
+		StyleConstants.setFontSize(style, 12);
+
+		style = doc.addStyle("Metric Intepretation", null);
+		StyleConstants.setForeground(style, Color.BLACK);
+		StyleConstants.setFontFamily(style, "Arial");
+		StyleConstants.setFontSize(style, 12);
+		
+		style = doc.addStyle("Other Name", null);
+		StyleConstants.setForeground(style, Color.BLUE);
+		StyleConstants.setBold(style, true);
+		StyleConstants.setFontFamily(style, "Arial Black");
+		StyleConstants.setFontSize(style, 12);
+
+		SimpleAttributeSet hrefAttr;
+		// Load the text pane with styled text.
+		try {
+			// Add in 1.1.0 a readme pane with all metric definitions
+			for (int iMetric = 0; iMetric < BasicCalculator.getNum(); iMetric++) {
+				String[] intpn = BasicCalculator.getIntpn(iMetric);
+				if (intpn == null || intpn[0] == null)
+					break;
+
+				style = doc.getStyle("Metric Name");
+				if(intpn[2] == null){
+					style.removeAttribute(HTML.Tag.A);
+				}else{
+					hrefAttr = new SimpleAttributeSet();
+					hrefAttr.addAttribute(HTML.Attribute.HREF, intpn[2]);
+					style.addAttribute(HTML.Tag.A, hrefAttr);
+				}
+				doc.insertString(doc.getLength(), intpn[0], style);
+				doc.insertString(doc.getLength(), newline, null);
+				doc.insertString(doc.getLength(), intpn[1], doc.getStyle("Metric Interpretation"));
+				doc.insertString(doc.getLength(), newline + newline, null);
+			}
+			
+			
+			for (int iExtra = 0; iExtra < extraInfo.length; iExtra++) {
+				
+				style = doc.getStyle("Other Name");
+				if(extraInfo[iExtra][2] == null){
+					style.removeAttribute(HTML.Tag.A);
+				}else{
+					hrefAttr = new SimpleAttributeSet();
+					hrefAttr.addAttribute(HTML.Attribute.HREF, extraInfo[iExtra][2]);
+					style.addAttribute(HTML.Tag.A, hrefAttr);
+				}
+				doc.insertString(doc.getLength(), extraInfo[iExtra][0], style);
+				doc.insertString(doc.getLength(), newline, null);
+				doc.insertString(doc.getLength(), extraInfo[iExtra][1], doc.getStyle("Metric Interpretation"));
+				doc.insertString(doc.getLength(), newline + newline, null);
+			}
+
+		} catch (BadLocationException ble) {
+			IJ.error(PluginStatic.pluginName + " error", "Couldn't insert initial text into JEditorpane.");
+		}
+
+		infoScrollpn = new JScrollPane(infoTextpn, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+				JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		infoScrollpn.setPreferredSize(new Dimension(0, 0));
+
+		GridBagConstraints gbc_info_textpane = new GridBagConstraints();
+		gbc_info_textpane.gridheight = 1;
+		gbc_info_textpane.gridwidth = 1;
+		gbc_info_textpane.insets = new Insets(10, 10, 10, 10);
+		gbc_info_textpane.fill = GridBagConstraints.BOTH;
+		gbc_info_textpane.gridx = 1;
+		gbc_info_textpane.gridy = 1;
+		infoSubTab.add(infoScrollpn, gbc_info_textpane);
+
 	}
 
 	private void aboutPane() {
@@ -1729,7 +1891,7 @@ public class GUI extends PluginStatic
 
 		// Email button here
 		email = new JButton("Help");
-		email.setToolTipText("Email the authors for any question");
+		email.setToolTipText("Email the author (" + CONTACT + ") for any question");
 		email.addActionListener(this);
 		GridBagConstraints gbc_btnNewButton_1 = new GridBagConstraints();
 		gbc_btnNewButton_1.anchor = GridBagConstraints.EAST;
@@ -1782,14 +1944,14 @@ public class GUI extends PluginStatic
 			 * imgd3TOS.removeAllItems(); imgd3TOS.addItem(NOIMAGE); }
 			 */
 		}
-		//System.out.println("----------");
+		// System.out.println("----------");
 		// RGB and 8-bit color images are not taken into account
 		if (WindowManager.getImageCount() != 0) {
 			nbImgs = 0;
 			int[] IDList = WindowManager.getIDList();
 			for (int i = 0; i < IDList.length; i++) {
 				ImagePlus currImg = WindowManager.getImage(IDList[i]);
-				if (currImg.getType()!= ImagePlus.COLOR_RGB) {
+				if (currImg.getType() != ImagePlus.COLOR_RGB) {
 					nbImgs++;
 					if (updateListAll) {
 						ImageInfo item = new ImageInfo(currImg);
@@ -1804,14 +1966,14 @@ public class GUI extends PluginStatic
 					}
 					if (addImp != null && currImg == addImp)
 						isOpened = true;
-				}else{
-					//Do not add RGB or 8-bit color images
+				} else {
+					// Do not add RGB or 8-bit color images
 					if (addImp != null && currImg == addImp)
 						isOpened = false;
 				}
 			}
 		}
-		
+
 		if (deleteImp != null) {
 			for (int i = 0; i < info.size(); i++) {
 				if (info.elementAt(i).equalID(deleteImp)) {
@@ -1820,8 +1982,8 @@ public class GUI extends PluginStatic
 				}
 			}
 		}
-		
-		if(addImp != null && deleteImp == null){
+
+		if (addImp != null && deleteImp == null) {
 			for (int i = 0; i < info.size(); i++) {
 				if (info.elementAt(i).equal(new ImageInfo(addImp))) {
 					addImp = null;
@@ -1993,11 +2155,7 @@ public class GUI extends PluginStatic
 	 * opened
 	 */
 	private void adaptZoom() {
-		/*
-		 * System.out.println("------------------");
-		 * Debugger.printStackTrace(8);
-		 * System.out.println("------------------");
-		 */
+
 		if (!adaptZoom || imgCombbxes == null || imgCombbxes.length < 3)
 			return;
 		Rectangle thisScreen = getGUIScreenBounds();
@@ -2023,7 +2181,8 @@ public class GUI extends PluginStatic
 		}
 
 		if (imgCombbxes[imgCombbxes.length - 1].getSelectedIndex() != -1) {
-			strImgs[nReporters] = imgCombbxes[imgCombbxes.length - 1].getItemAt(imgCombbxes[imgCombbxes.length - 1].getSelectedIndex()).ID;
+			strImgs[nReporters] = imgCombbxes[imgCombbxes.length - 1]
+					.getItemAt(imgCombbxes[imgCombbxes.length - 1].getSelectedIndex()).ID;
 		}
 		if (strImgs[nReporters] == ImageInfo.NONE_ID)
 			iwImgs[nReporters] = null;
@@ -2106,9 +2265,7 @@ public class GUI extends PluginStatic
 		tabs.setEnabledAt(ANALYSISTAB, true);
 		analysisSubTabs.setEnabled(true);
 		analysisSubTabs.setEnabledAt(METRICSUBTAB, true);
-		// analysisSubTabs.setEnabledAt(MTOSSUBTAB,true);
-		// analysisSubTabs.setEnabledAt(DISTSUBTAB,true);
-		analysisSubTabs.setEnabledAt(OTHERSUBTAB, true);
+		analysisSubTabs.setEnabledAt(CUSTOMSUBTAB, true);
 		analyzeBtn.setEnabled(true);
 	}
 
@@ -2123,30 +2280,30 @@ public class GUI extends PluginStatic
 		for (int ipic = 0; ipic < nReporters; ipic++) {
 			boolean isPresent = imgCombbxes[ipic].isVisible() && imgCombbxes[ipic].getSelectedIndex() != -1
 					&& !imgCombbxes[ipic].getItemAt(imgCombbxes[ipic].getSelectedIndex()).equal(NOIMAGE);
-			
+
 			alignedChckbxes[ipic].setEnabled(isPresent);
 			alignTholdCombbxes[ipic].setEnabled(isPresent);
 			heatmapColorCombbxes[ipic].setEnabled(isPresent);
 			heatmapChckbxes[ipic].setEnabled(isPresent);
-			
-			if(!isPresent){
+
+			if (!isPresent) {
 				alignedChckbxes[ipic].setSelected(false);
-				align_chckes[ipic]=false;
+				align_chckes[ipic] = false;
 				heatmapChckbxes[ipic].setSelected(false);
-				heatmap_chckes[ipic]=false;
+				heatmap_chckes[ipic] = false;
 			}
 
-			anyReporter |= isPresent;
-			allReporters &= isPresent;
+			anyReporter  |= isPresent;
+			allReporters &= isPresent || !imgCombbxes[ipic].isVisible();
 		}
 
 		for (JCheckBox chckBx : otherChckbxes)
 			chckBx.setEnabled(anyReporter);
-		
-		if(!anyReporter){
-			for (int i =0;i< otherChckbxes.length;i++){
+
+		if (!anyReporter) {
+			for (int i = 0; i < otherChckbxes.length; i++) {
 				otherChckbxes[i].setSelected(false);
-				other_chckes[i]=false;
+				other_chckes[i] = false;
 			}
 		}
 
@@ -2163,23 +2320,22 @@ public class GUI extends PluginStatic
 		for (JCheckBox chckBx : outputMetricChckbxes)
 			chckBx.setEnabled(allReporters);
 
-		if(!allReporters){
+		if (!allReporters) {
 			scatterplotChckbx.setSelected(false);
 			matrixChckbx.setSelected(false);
-			for(int i=0;i<metricChckbxes.length;i++){
+			for (int i = 0; i < metricChckbxes.length; i++) {
 				metricChckbxes[i].setSelected(false);
-				metric_chckes[i]=false;
+				metric_chckes[i] = false;
 			}
-			for(int i=0;i<outputMetricChckbxes.length;i++){
+			for (int i = 0; i < outputMetricChckbxes.length; i++) {
 				outputMetricChckbxes[i].setSelected(false);
-				outputMetric_chckes[i]=false;
-			}	
+				outputMetric_chckes[i] = false;
+			}
 		}
-		
-		
+
 		tabs.setEnabledAt(VISUALTAB, anyReporter);
 
-		analysisSubTabs.setEnabledAt(OTHERSUBTAB, anyReporter);
+		analysisSubTabs.setEnabledAt(CUSTOMSUBTAB, anyReporter);
 
 		// Cell ID Channel although there is only one
 		for (int ipic = MAX_NCHANNELS - 1; ipic >= MAX_NREPORTERS; ipic--) {
@@ -2187,28 +2343,37 @@ public class GUI extends PluginStatic
 					&& !imgCombbxes[ipic].getItemAt(imgCombbxes[ipic].getSelectedIndex()).equal(NOIMAGE);
 
 			if (!isPresent) {
-				for (int i = 0; i < nReporters; i++){
+				for (int i = 0; i < nReporters; i++) {
 					alignedChckbxes[i].setEnabled(false);
-					align_chckes[i]=false;
+					align_chckes[i] = false;
 				}
 			}
 			alignTholdCombbxes[ipic].setEnabled(isPresent);
-			heatmapRadiobtns[0].setEnabled(isPresent);
-			if (heatmapRadiobtns[0].isSelected() != isPresent) {
-				heatmapRadiobtns[0].setSelected(isPresent);
-				heatmapRadiobtns[1].setSelected(!isPresent);
-			}
 			
+			
+			if (heatmapRadiobtns[0].isSelected() && !isPresent) {
+				heatmapRadiobtns[0].setSelected(false);
+				heatmapRadiobtns[1].setSelected(true);
+			}else if (!heatmapRadiobtns[0].isEnabled() && isPresent){
+				heatmapRadiobtns[0].setSelected(true);
+			}
+			heatmapRadiobtns[0].setEnabled(isPresent);
+
 			for (JCheckBox chckBx : outputOptChckbxes)
 				chckBx.setEnabled(isPresent);
-			
-			if(!isPresent){
-				for(int i=0;i<outputOptChckbxes.length;i++){
-					outputOptChckbxes[i].setSelected(false);
-					outputOpt_chckes[i]=false;
+
+			if (!isPresent) {
+				
+				for (int iAlign = 0; iAlign < nReporters; iAlign++) {
+					alignedChckbxes[iAlign].setSelected(false);
+					align_chckes[iAlign] = false;
+				}
+				for (int iOutput = 0; iOutput < outputOptChckbxes.length; iOutput++) {
+					outputOptChckbxes[iOutput].setSelected(false);
+					outputOpt_chckes[iOutput] = false;
 				}
 			}
-			
+
 			tabs.setEnabledAt(FILTERTAB, isPresent);
 
 			previewTholdBtn.setEnabled(anyReporter || isPresent);
@@ -2249,7 +2414,8 @@ public class GUI extends PluginStatic
 
 		for (int iFilter = 0; iFilter < filter_combs.length; iFilter++) {
 			filter_combs[iFilter] = (int) Prefs.get(pluginName + "filterChoice" + iFilter, filter_combs[iFilter]);
-			filterBackRatio_texts[iFilter] = Prefs.get(pluginName + "backRatio" + iFilter, filterBackRatio_texts[iFilter]);
+			filterBackRatio_texts[iFilter] = Prefs.get(pluginName + "backRatio" + iFilter,
+					filterBackRatio_texts[iFilter]);
 			filterMinRange_texts[iFilter] = Prefs.get(pluginName + "minRange" + iFilter, filterMinRange_texts[iFilter]);
 			filterMinRange_texts[iFilter] = Prefs.get(pluginName + "minRange" + iFilter, filterMinRange_texts[iFilter]);
 		}
@@ -2281,7 +2447,8 @@ public class GUI extends PluginStatic
 		heatmap_radio = (int) Prefs.get(pluginName + "whichHeatmapOpt", heatmap_radio);
 
 		for (int iHeat = 0; iHeat < heatmapColor_combs.length; iHeat++)
-			heatmapColor_combs[iHeat] = (int) Prefs.get(pluginName + "heatmapChoice" + iHeat, heatmapColor_combs[iHeat]);
+			heatmapColor_combs[iHeat] = (int) Prefs.get(pluginName + "heatmapChoice" + iHeat,
+					heatmapColor_combs[iHeat]);
 
 		// analysis tab
 		for (int iMetric = 0; iMetric < metric_chckes.length; iMetric++)
@@ -2290,20 +2457,11 @@ public class GUI extends PluginStatic
 		for (int iOpt = 0; iOpt < other_chckes.length; iOpt++)
 			other_chckes[iOpt] = Prefs.get(pluginName + "otherOpts" + iOpt, other_chckes[iOpt]);
 
-		mTOSscale = (int) Prefs.get(pluginName + "mTOSscale", mTOSscale);
-
-		whichDist = (int) Prefs.get(pluginName + "whichDist", whichDist);
-
-		for (int iDist = 0; iDist < numOfDistFTs.length; iDist++)
-			numOfDistFTs[iDist] = (int) Prefs.get(pluginName + "numOfDistFT" + iDist, numOfDistFTs[iDist]);
-
-		for (int iDist = 0; iDist < whichDistTholds.length; iDist++)
-			whichDistTholds[iDist] = (int) Prefs.get(pluginName + "whichDistThold" + iDist, whichDistTholds[iDist]);
-
 		custom_chck = Prefs.get(pluginName + "doCustom", custom_chck);
 
 		for (int iThold = 0; iThold < metricThold_radios.length; iThold++)
-			metricThold_radios[iThold] = (int) Prefs.get(pluginName + "metricThold" + iThold, metricThold_radios[iThold]);
+			metricThold_radios[iThold] = (int) Prefs.get(pluginName + "metricThold" + iThold,
+					metricThold_radios[iThold]);
 
 		for (int iChannel = 0; iChannel < allFT_spins.length; iChannel++)
 			for (int iMetric = 0; iMetric < allFT_spins[iChannel].length; iMetric++)
@@ -2312,17 +2470,12 @@ public class GUI extends PluginStatic
 
 		// output tab
 		for (int iMetric = 0; iMetric < outputMetric_chckes.length; iMetric++)
-			outputMetric_chckes[iMetric] = Prefs.get(pluginName + "outputMetric" + iMetric, outputMetric_chckes[iMetric]);
+			outputMetric_chckes[iMetric] = Prefs.get(pluginName + "outputMetric" + iMetric,
+					outputMetric_chckes[iMetric]);
 
 		for (int iOpt = 0; iOpt < outputOpt_chckes.length; iOpt++)
 			outputOpt_chckes[iOpt] = Prefs.get(pluginName + "outputOther" + iOpt, outputOpt_chckes[iOpt]);
 
-		// 3d TOS
-
-		doD3TOS = Prefs.get(pluginName + "d3TOSOpt", doD3TOS);
-
-		for (int iTOS = 0; iTOS < tosFTs.length; iTOS++)
-			tosFTs[iTOS] = (int) Prefs.get(pluginName + "tosFT-c" + iTOS, tosFTs[iTOS]);
 	}
 
 	private Overlay newOverlay() {
@@ -2397,20 +2550,31 @@ public class GUI extends PluginStatic
 			else if (imgCombbxes[ipic].getItemAt(imgCombbxes[ipic].getSelectedIndex()).equal(NOIMAGE))
 				imps[ipic] = null;
 			else {
-				imps[ipic] = WindowManager.getImage(imgCombbxes[ipic].getItemAt(imgCombbxes[ipic].getSelectedIndex()).ID);
+				imps[ipic] = WindowManager
+						.getImage(imgCombbxes[ipic].getItemAt(imgCombbxes[ipic].getSelectedIndex()).ID);
 				temp = imps[ipic];
 			}
 		}
 
 		for (int iAlign = 0; iAlign < align_chckes.length; iAlign++) {
 			align_chckes[iAlign] = alignedChckbxes[iAlign].isSelected();
-			Prefs.set(pluginName + "whichAlign" + iAlign + "." + getVarName(align_chckes[iAlign]), align_chckes[iAlign]);
+			Prefs.set(pluginName + "whichAlign" + iAlign + "." + getVarName(align_chckes[iAlign]),
+					align_chckes[iAlign]);
 			align_chckes[iAlign] &= alignedChckbxes[iAlign].isEnabled();
 		}
 
 		for (int iThold = 0; iThold < alignTholdCombbxes.length; iThold++) {
 			alignThold_combs[iThold] = alignTholdCombbxes[iThold].getSelectedIndex();
-			Prefs.set(pluginName + "whichThold" + iThold + "." + getVarName(alignThold_combs[iThold]), alignThold_combs[iThold]);
+			Prefs.set(pluginName + "whichThold" + iThold + "." + getVarName(alignThold_combs[iThold]),
+					alignThold_combs[iThold]);
+
+			// Add in 1.1.0 save current thresholds by imageprocessor
+			// Do NOT save preference!
+			if (ALLTHOLDS[alignThold_combs[iThold]].equals(MANUAL_THOLD) && imps[iThold] != null) {
+				manualTholds[iThold][0] = imps[iThold].getProcessor().getMinThreshold();
+				manualTholds[iThold][1] = imps[iThold].getProcessor().getMaxThreshold();
+			}
+
 		}
 
 		waterShed_chck = waterShedChckbx.isSelected();
@@ -2421,8 +2585,10 @@ public class GUI extends PluginStatic
 			double[] range = str2doubles(filterSizeTexts[iSize].getText());
 			filterMinSize_texts[iSize] = range[0];
 			filterMaxSize_texts[iSize] = range[1];
-			Prefs.set(pluginName + "minSize" + iSize + "." + getVarName(filterMinSize_texts[iSize]), filterMinSize_texts[iSize]);
-			Prefs.set(pluginName + "maxSize" + iSize + "." + getVarName(filterMaxSize_texts[iSize]), filterMaxSize_texts[iSize]);
+			Prefs.set(pluginName + "minSize" + iSize + "." + getVarName(filterMinSize_texts[iSize]),
+					filterMinSize_texts[iSize]);
+			Prefs.set(pluginName + "maxSize" + iSize + "." + getVarName(filterMaxSize_texts[iSize]),
+					filterMaxSize_texts[iSize]);
 		}
 
 		for (int iFilter = 0; iFilter < filter_combs.length; iFilter++) {
@@ -2436,9 +2602,12 @@ public class GUI extends PluginStatic
 
 			Prefs.set(pluginName + "filterChoice" + iFilter + "." + getVarName(filter_combs[iFilter]),
 					filter_combs[iFilter]);
-			Prefs.set(pluginName + "backRatio" + iFilter + "." + getVarName(filterBackRatio_texts[iFilter]), filterBackRatio_texts[iFilter]);
-			Prefs.set(pluginName + "minRange" + iFilter + "." + getVarName(filterMinRange_texts[iFilter]), filterMinRange_texts[iFilter]);
-			Prefs.set(pluginName + "maxRange" + iFilter + "." + getVarName(filterMaxRange_texts[iFilter]), filterMaxRange_texts[iFilter]);
+			Prefs.set(pluginName + "backRatio" + iFilter + "." + getVarName(filterBackRatio_texts[iFilter]),
+					filterBackRatio_texts[iFilter]);
+			Prefs.set(pluginName + "minRange" + iFilter + "." + getVarName(filterMinRange_texts[iFilter]),
+					filterMinRange_texts[iFilter]);
+			Prefs.set(pluginName + "maxRange" + iFilter + "." + getVarName(filterMaxRange_texts[iFilter]),
+					filterMaxRange_texts[iFilter]);
 		}
 
 		for (int iFilter = 0; iFilter < adFilterChoices.size(); iFilter++) {
@@ -2497,33 +2666,12 @@ public class GUI extends PluginStatic
 				Prefs.set(pluginName + "numOfFT" + iTOS + "." + getVarName(matrixFT_spin[iTOS]), matrixFT_spin[iTOS]);
 			}
 
-			/*
-			for (int iDist = 0; iDist < distRadios.length; iDist++) {
-				if (distRadios[iDist].isSelected()) {
-					whichDist = iDist;
-					break;
-				}
-			}
-			Prefs.set(pluginName + "whichDist" + "." + getVarName(whichDist), whichDist);
-
-			for (int iDist = 0; iDist < numOfDistFTs.length; iDist++) {
-				numOfDistFTs[iDist] = Integer.parseInt(distFTLabels[iDist].getText());
-				Prefs.set(pluginName + "numOfDistFT" + iDist + "." + getVarName(numOfDistFTs[iDist]),
-						numOfDistFTs[iDist]);
-			}
-
-			for (int iDist = 0; iDist < whichDistTholds.length; iDist++) {
-				whichDistTholds[iDist] = distThresholders[iDist].getSelectedIndex();
-				Prefs.set(pluginName + "whichDistThold" + iDist + "." + getVarName(whichDistTholds[iDist]),
-						whichDistTholds[iDist]);
-			}
-			*/
-
 		}
 
 		for (int iColumn = 0; iColumn < metric_chckes.length; iColumn++) {
 			metric_chckes[iColumn] = metricChckbxes[iColumn].isSelected();
-			Prefs.set(pluginName + "metricOpts" + iColumn + "." + getVarName(metric_chckes[iColumn]), metric_chckes[iColumn]);
+			Prefs.set(pluginName + "metricOpts" + iColumn + "." + getVarName(metric_chckes[iColumn]),
+					metric_chckes[iColumn]);
 			metric_chckes[iColumn] &= metricChckbxes[iColumn].isEnabled();
 		}
 
@@ -2558,20 +2706,19 @@ public class GUI extends PluginStatic
 					// e.printStackTrace();
 				}
 				allFT_spins[iChannel][iMetric] = (Integer) allFTSpinners[iChannel][iMetric].getValue();
-				Prefs.set(
-						pluginName + "allFT-c" + iChannel + "-" + iMetric + "." + getVarName(allFT_spins[iChannel][iMetric]),
-						allFT_spins[iChannel][iMetric]);
+				Prefs.set(pluginName + "allFT-c" + iChannel + "-" + iMetric + "."
+						+ getVarName(allFT_spins[iChannel][iMetric]), allFT_spins[iChannel][iMetric]);
 			}
 
-		
 		boolean anyOtherMetric = false;
 		for (int iColumn = 0; iColumn < other_chckes.length; iColumn++) {
 			other_chckes[iColumn] = otherChckbxes[iColumn].isSelected();
-			Prefs.set(pluginName + "otherOpts" + iColumn + "." + getVarName(other_chckes[iColumn]), other_chckes[iColumn]);
+			Prefs.set(pluginName + "otherOpts" + iColumn + "." + getVarName(other_chckes[iColumn]),
+					other_chckes[iColumn]);
 			other_chckes[iColumn] &= otherChckbxes[iColumn].isEnabled();
 			anyOtherMetric |= other_chckes[iColumn];
 		}
-		
+
 		// DIYcode will be not recored because of it's complication
 		customCode_text = customCodeTextbx.getText();
 
@@ -2579,20 +2726,19 @@ public class GUI extends PluginStatic
 		custom_chck = customMetricChckbxes.isSelected();
 		Prefs.set(pluginName + "doCustom" + "." + getVarName(custom_chck), custom_chck);
 		custom_chck &= customMetricChckbxes.isEnabled();
-		
-		
+
 		for (int iColumn = 0; iColumn < outputMetric_chckes.length; iColumn++) {
 			outputMetric_chckes[iColumn] = outputMetricChckbxes[iColumn].isSelected();
 			Prefs.set(pluginName + "outputMetric" + iColumn + "." + getVarName(outputMetric_chckes[iColumn]),
 					outputMetric_chckes[iColumn]);
 			outputMetric_chckes[iColumn] &= outputMetricChckbxes[iColumn].isEnabled();
 		}
-		
+
 		/**
-		 * retrieve metricTholds and allFTs to allTholds but not record it
-		 * Add one more term for average intensity and custom metric
+		 * retrieve metricTholds and allFTs to allTholds but not record it Add
+		 * one more term for average intensity and custom metric
 		 */
-		allTholds = new int[iFTs+1];
+		allTholds = new int[iFTs + 1];
 		iFTs = 0;
 		for (int iMetric = 0; iMetric < metricThold_radios.length; iMetric++) {
 			if (metric_chckes[iMetric]) {
@@ -2606,9 +2752,9 @@ public class GUI extends PluginStatic
 			}
 		}
 		if (anyOtherMetric)
-			allTholds[allTholds.length-1] = BasicCalculator.THOLD_ALL;
+			allTholds[allTholds.length - 1] = BasicCalculator.THOLD_ALL;
 		else
-			allTholds[allTholds.length-1] = BasicCalculator.THOLD_NONE;
+			allTholds[allTholds.length - 1] = BasicCalculator.THOLD_NONE;
 
 		for (int iColumn = 0; iColumn < outputOpt_chckes.length; iColumn++) {
 			outputOpt_chckes[iColumn] = outputOptChckbxes[iColumn].isSelected();
@@ -2617,38 +2763,7 @@ public class GUI extends PluginStatic
 			outputOpt_chckes[iColumn] &= outputOptChckbxes[iColumn].isEnabled();
 		}
 
-		// 3D TOS Opts
-		/*
-		 * for (int ipic=0;ipic<imps.length;ipic++) impd3TOS[ipic] = imps[ipic];
-		 * 
-		 * if(imgd3TOS.getItemAt(imgd3TOS.getSelectedIndex()).equal(NOIMAGE))
-		 * impd3TOS[impd3TOS.length-1] = null; else impd3TOS[impd3TOS.length-1]
-		 * =
-		 * WindowManager.getImage(imgd3TOS.getItemAt(imgd3TOS.getSelectedIndex()
-		 * ).ID);
-		 */
-
-		/*
-		 * if(chckbxd3TOS!=null && chckbxd3TOS.isEnabled()) doD3TOS =
-		 * chckbxd3TOS.isSelected(); else doD3TOS = false;
-		 * Prefs.set(PlugInName+"d3TOSOpt"+"."+getVarName(doD3TOS), doD3TOS);
-		 * 
-		 * for(int iChannel=0;iChannel<tosFTs.length;iChannel++){ try {
-		 * d3TOSSpinners[iChannel].commitEdit(); } catch (ParseException e) { //
-		 * TODO Auto-generated catch block //e.printStackTrace(); }
-		 * tosFTs[iChannel] = (Integer)d3TOSSpinners[iChannel].getValue();
-		 * Prefs.set(PlugInName+"tosFT-c"+iChannel+"."+getVarName(tosFTs[
-		 * iChannel]), tosFTs[iChannel]); }
-		 */
-
-		// 3d tos tholds
-		tosTholds = new int[tosFTs.length + 1];
-		tosTholds[0] = BasicCalculator.THOLD_FT;
-		for (int iMetric = 0; iMetric < tosFTs.length; iMetric++) {
-			tosTholds[iMetric + 1] = tosFTs[iMetric];
-		}
-
-		if (Recorder.record) {
+		if (recorderRecord) {
 			MacroHandler.macroRecorder(true);
 			// Recorder.record("//The action can only be recorded with Macro
 			// language");
@@ -2658,6 +2773,57 @@ public class GUI extends PluginStatic
 
 	}
 
+	private void handleBackSubThreshold(ImagePlus imp, int ipic) {
+
+		// Add in 1.1.0
+		// Do NOT subtract background is threshold is manually selected
+		// Use overlay to display thresholds instead of ColorModel
+		// This is because images are processed in the background
+		// The integrity of the original ImageProcessor must be maintained
+
+		ImageProcessor ip = imp.getProcessor().duplicate();
+		
+		if(ip.isInvertedLut())
+			ip.invertLut();
+		
+		// BackgroundProcessor impBackground = new BackgroundProcessor(ip,
+		// ALLTHOLDS[alignThold_combs[ipic]]);
+		// impBackground.setManualThresholds(manualTholds[alignThold_combs.length
+		// - 1]);
+		if (!ip.isBinary() && !ALLTHOLDS[alignThold_combs[ipic]].equals(PluginStatic.MANUAL_THOLD))
+			BackgroundProcessor.rollSubBackground(ip, rollingBallSizes[ipic], lightBacks[ipic]);
+
+		boolean lightBackground = lightBacks[ipic] != null ? lightBacks[ipic] : BackgroundProcessor.isLightBackground(imp);
+		
+		ip.setAutoThreshold(Method.valueOf(ALLTHOLDS[alignThold_combs[ipic]]), !lightBackground,
+				ImageProcessor.NO_LUT_UPDATE);
+
+		if (lightBackground)
+			ip.threshold((int) ip.getMaxThreshold());
+		else
+			ip.threshold((int) ip.getMinThreshold());
+		ip = ip.convertToByteProcessor(false);
+		ip.invertLut();
+		if (lightBackground ^ Prefs.blackBackground)
+			ip.invert();
+		
+		currentOverlays[ipic] = imp.getOverlay();
+
+		RoiManager roiParticles = new RoiManager(false);
+		if (!ParticleAnalyzerMT.analyzeWithHole(ip, roiParticles))
+			return;
+		
+		Overlay thresholdOverlay = new Overlay();
+		for (int iRoi = 0; iRoi < roiParticles.getCount(); iRoi++) {
+			thresholdOverlay.add(roiParticles.getRoi(iRoi));
+		}
+		thresholdOverlay.setFillColor(Color.RED);
+		thresholdOverlay.setStrokeColor(null);
+		thresholdOverlay.setLabelColor(null);
+
+		imp.setOverlay(thresholdOverlay);
+	}
+
 	public void updateThr() {
 		for (int ipic = 0; ipic < imgCombbxes.length; ipic++) {
 			updateThr(ipic);
@@ -2665,20 +2831,46 @@ public class GUI extends PluginStatic
 	}
 
 	private void updateThr(int ipic) {
-		if (ipic < 0 || ipic >= imgCombbxes.length || imgCombbxes[ipic] == null || imgCombbxes[ipic].getSelectedIndex() == -1)
+		if (ipic < 0 || ipic >= imgCombbxes.length || imgCombbxes[ipic] == null
+				|| imgCombbxes[ipic].getSelectedIndex() == -1)
 			return;
 		updateThr(ipic, imgCombbxes[ipic].getItemAt(imgCombbxes[ipic].getSelectedIndex()));
 	}
 
 	private void updateThr(int ipic, ImageInfo info) {
+		if (ipic < 0 || ipic >= imgCombbxes.length || imgCombbxes[ipic] == null
+				|| imgCombbxes[ipic].getSelectedIndex() == -1)
+			return;
 		imgUpdate = false;
 		ImagePlus imp = WindowManager.getImage(info.ID);
 		if (imp != null) {
-			if (ipic >= 0 && ipic < alignThold_combs.length)
-				imp.getProcessor().setAutoThreshold(Method.valueOf(ALLTHOLDS[alignThold_combs[ipic]]),
-						!BackgroundProcessor.detectBackground(imp), ImageProcessor.RED_LUT);
-			else
-				imp.getProcessor().resetThreshold();
+			if (getMethod(ALLTHOLDS[alignThold_combs[ipic]]) == null) {
+				// ThresholdAdjuster tholdAd = new ThresholdAdjuster();
+				imp.getWindow().toFront();
+				ImageProcessor ip = imp.getProcessor();
+				// Add in 1.1.0 to ignore current Roi on the image
+				// Set the threshold ahead of ThresholdAdjuster so it will use
+				// it
+				if (ip.getMinThreshold() != ImageProcessor.NO_THRESHOLD)
+					ip.setThreshold(ip.getMinThreshold(), ip.getMaxThreshold(), ImageProcessor.RED_LUT);
+				
+				// This has to be done to avoid automatically erase of the thresholds
+				IJ.run(imp, "Threshold...", null);
+			} else {
+				// Add in 1.1.0 to ignore current Roi on the image
+				// Do NOT use restoreRoi option since it will restore Roi on all
+				// images
+				Roi roi = imp.getRoi();
+				imp.deleteRoi();
+				if (preBackSub) {
+					handleBackSubThreshold(imp, ipic);
+				} else {
+					boolean lightback = lightBacks[ipic] != null ? lightBacks[ipic] : BackgroundProcessor.looksLightBackground(imp);
+					imp.getProcessor().setAutoThreshold(Method.valueOf(ALLTHOLDS[alignThold_combs[ipic]]),
+							!lightback, ImageProcessor.RED_LUT);
+				}
+				imp.setRoi(roi);
+			}
 			imp.updateAndDraw();
 		}
 		imgUpdate = true;
@@ -2686,21 +2878,44 @@ public class GUI extends PluginStatic
 
 	public void resetThr() {
 		for (int ipic = 0; ipic < imgCombbxes.length; ipic++) {
-			resetThr(ipic);
+			resetThr(ipic, imgCombbxes[ipic].getItemAt(imgCombbxes[ipic].getSelectedIndex()));
 		}
 	}
 
-	private void resetThr(int ipic) {
-		if (ipic < 0 || ipic >= imgCombbxes.length || imgCombbxes[ipic] == null || imgCombbxes[ipic].getSelectedIndex() == -1)
+	private void resetThr(int ipic, ImageInfo info) {
+		if (ipic < 0 || ipic >= imgCombbxes.length || imgCombbxes[ipic] == null
+				|| imgCombbxes[ipic].getSelectedIndex() == -1)
 			return;
-		updateThr(-1, imgCombbxes[ipic].getItemAt(imgCombbxes[ipic].getSelectedIndex()));
-	}
-
-	private void resetThr(ImageInfo info) {
-		updateThr(-1, info);
+		imgUpdate = false;
+		ImagePlus imp = WindowManager.getImage(info.ID);
+		if (imp != null) {
+			if (getMethod(ALLTHOLDS[alignThold_combs[ipic]]) == null) {
+				// ThresholdAdjuster tholdAd = new ThresholdAdjuster();
+				ImageProcessor ip = imp.getProcessor();
+				double[] thresholds = new double[] { ip.getMinThreshold(), ip.getMaxThreshold() };
+				
+				// Close the Threshold window so it loses focus
+				Window thesholdWindow = WindowManager.getWindow("Threshold");
+				if (thesholdWindow != null && (thesholdWindow instanceof ThresholdAdjuster))
+					((ThresholdAdjuster) thesholdWindow).close();
+				
+				ip.resetThreshold();
+				ip.setThreshold(thresholds[0], thresholds[1], ImageProcessor.NO_LUT_UPDATE);
+				
+			} else {
+				if (preBackSub)
+					imp.setOverlay(currentOverlays[ipic]);
+				imp.getProcessor().resetThreshold();
+			}
+			imp.updateAndDraw();
+		}
+		imgUpdate = true;
 	}
 
 	public void actionPerformed(ActionEvent e) {
+
+		recorderRecord = Recorder.record;
+		Recorder.record = false;
 
 		Object origin = e.getSource();
 		imgUpdate = false;
@@ -2712,6 +2927,7 @@ public class GUI extends PluginStatic
 				if (imp != null)
 					imp.getWindow().toFront();
 				imgUpdate = true;
+				Recorder.record = recorderRecord;
 				return;
 			}
 		}
@@ -2723,6 +2939,7 @@ public class GUI extends PluginStatic
 				if (showThold)
 					updateThr(iThold);
 				imgUpdate = true;
+				Recorder.record = recorderRecord;
 				return;
 			}
 		}
@@ -2749,6 +2966,7 @@ public class GUI extends PluginStatic
 
 		} else if (origin == previewVisual) {
 			retrieveParams();
+			options &= MASK_VISUAL;
 			analysis = new AnalysisOperator(this);
 			analysis.prepVisual();
 			analysis.execute(((e.getModifiers() & ActionEvent.SHIFT_MASK) != 0) ? false : true);
@@ -2763,6 +2981,7 @@ public class GUI extends PluginStatic
 
 		} else if (origin == doAlignmentBtn) {
 			retrieveParams();
+			options &= MASK_ALIGNMENT;
 			analysis = new AnalysisOperator(this);
 			analysis.prepAlignment();
 			analysis.execute(((e.getModifiers() & ActionEvent.SHIFT_MASK) != 0) ? false : true);
@@ -2789,7 +3008,7 @@ public class GUI extends PluginStatic
 				gdCellFilters.retrieveFilters(adFilterChoices, adBackRatios);
 				gdCellFilters.retrieveRanges(adMinRanges, adMaxRanges);
 			}
-		} else if (origin == runCustom) {
+		} else if (origin == runCustomBtn) {
 			// retrieveParams();
 			// doCustom=checkCustom.isSelected();
 			if (customMetricChckbxes.isSelected()) {
@@ -2799,7 +3018,7 @@ public class GUI extends PluginStatic
 
 					if (testCode.compileCustom(customCode_text))
 						setCustomStatus(SUCCESS);
-					else{
+					else {
 						setCustomStatus(FAILURE);
 						ExceptionHandler.print2log(true);
 					}
@@ -2812,7 +3031,7 @@ public class GUI extends PluginStatic
 				}
 			}
 
-		} else if (origin == resetCustom) {
+		} else if (origin == resetCustomBtn) {
 			customCodeTextbx.setText(StringCompiler.getDefaultCode());
 			setCustomStatus(SKIP);
 			customMetricChckbxes.setSelected(false);
@@ -2820,11 +3039,11 @@ public class GUI extends PluginStatic
 			// need to queue the setValue function otherwise not working
 			SwingUtilities.invokeLater(new Runnable() {
 				public void run() {
-					customCodeScrollpnl.getVerticalScrollBar().setValue(0);
+					customCodeScrollpn.getVerticalScrollBar().setValue(0);
 				}
 			});
 
-		} else if (origin == helpCustom) {
+		} else if (origin == helpCustomBtn) {
 			try {
 				BrowserLauncher.openURL(CUSTOM_URL);
 			} catch (IOException ie) {
@@ -2844,25 +3063,14 @@ public class GUI extends PluginStatic
 			else
 				setCustomStatus(SKIP);
 			customMetricChckbxes.setSelected(otherChckbxes[otherChckbxes.length - 1].isSelected());
-		} /*
-			 * else if(origin==chckbxd3TOS){
-			 * imgd3TOS.setEnabled(chckbxd3TOS.isSelected()); for (JSpinner
-			 * spinner: d3TOSSpinners)
-			 * spinner.setEnabled(chckbxd3TOS.isSelected()); }
-			 */
+		}
 
 		imgUpdate = true;
 
+		Recorder.record = recorderRecord;
+		return;
 	}
 
-	/*
-	 * public void itemStateChanged(ItemEvent e) { if (e.getStateChange() ==
-	 * ItemEvent.SELECTED) { updateTicked(); if (tabs.isEnabled()) { int
-	 * tabSelect = tabs.getSelectedIndex(); tabs.setSelectedIndex(tabSelect); }
-	 * }
-	 * 
-	 * }
-	 */
 	public void setImageListener(Boolean imgIO, Boolean imgUpdate) {
 		if (imgIO != null)
 			this.imgIO = imgIO;
@@ -2888,13 +3096,13 @@ public class GUI extends PluginStatic
 
 	public void imageUpdated(ImagePlus imp) {
 		if (imgUpdate && imp.getID() != 0) {
-			//InvokeLater after the update of the current image
-			SwingUtilities.invokeLater(new Runnable(){
+			// InvokeLater after the update of the current image
+			SwingUtilities.invokeLater(new Runnable() {
 				@Override
-				public void run(){
-					//imgIO = false;
+				public void run() {
+					// imgIO = false;
 					updateImgList(imp, imp);
-					//imgIO = true;
+					// imgIO = true;
 				}
 			});
 		}
@@ -2903,47 +3111,42 @@ public class GUI extends PluginStatic
 	public void stateChanged(ChangeEvent e) {
 		Object origin = e.getSource();
 
-		if (origin == tabs) {
-			switch (tabs.getSelectedIndex()) {
-			case FILTERTAB:
-				resetThr();
-				updateThr(imgCombbxes.length - 1);
-				break;
-			case INPUTTAB:
-				if (showThold)
-					updateThr();
-				else
-					resetThr();
-				break;
-			default:
-				resetThr();
-			}
-		}
-
 		if (origin == tabs && tabs.getSelectedIndex() != FILTERTAB)
 			resetRoi();
 
-		/*
-		for (int iFT = 0; iFT < distFTs.length; iFT++) {
-			if (origin == distFTs[iFT]) {
-				distFTLabels[iFT].setText("" + distFTs[iFT].getValue());
-				updateFT(iFT);
-			}
-		}*/
-	}
-	/*
-	public void propertyChange(PropertyChangeEvent e) {
-		Object origin = e.getSource();
-		// if (origin==xyCalibTxt || origin==zCalibTxt) updateCostesRandParam();
-
-		for (int iFT = 0; iFT < distFTLabels.length; iFT++) {
-			if (origin == distFTLabels[iFT]) {
-				distFTs[iFT].setValue((int) parseDouble(distFTLabels[iFT].getText()));
-				updateFT(iFT);
+		if (origin == tabs) {
+			switch (tabs.getSelectedIndex()) {
+				case FILTERTAB:
+					resetThr();
+					updateThr(imgCombbxes.length - 1);
+					break;
+				case INPUTTAB:
+					if (showThold)
+						updateThr();
+					else
+						resetThr();
+					break;
+				default:
+					resetThr();
 			}
 		}
-
+		/*
+		 * for (int iFT = 0; iFT < distFTs.length; iFT++) { if (origin ==
+		 * distFTs[iFT]) { distFTLabels[iFT].setText("" +
+		 * distFTs[iFT].getValue()); updateFT(iFT); } }
+		 */
 	}
+
+	/*
+	 * public void propertyChange(PropertyChangeEvent e) { Object origin =
+	 * e.getSource(); // if (origin==xyCalibTxt || origin==zCalibTxt)
+	 * updateCostesRandParam();
+	 * 
+	 * for (int iFT = 0; iFT < distFTLabels.length; iFT++) { if (origin ==
+	 * distFTLabels[iFT]) { distFTs[iFT].setValue((int)
+	 * parseDouble(distFTLabels[iFT].getText())); updateFT(iFT); } }
+	 * 
+	 * }
 	 */
 	public void windowActivated(WindowEvent e) {
 	}
@@ -2988,7 +3191,13 @@ public class GUI extends PluginStatic
 		// store the old images for reset alignment
 		for (int ipic = 0; ipic < imps.length; ipic++) {
 			if (imps[ipic] != null) {
+				// Add in 1.1.0 to ignore current Roi on the image
+				// Do NOT use restoreRoi because it might restore the previous
+				// Roi from a different run
+				Roi roi = imps[ipic].getRoi();
+				imps[ipic].deleteRoi();
 				oldImps[ipic] = imps[ipic].duplicate();
+				imps[ipic].setRoi(roi);
 				oldImps[ipic].setTitle(imps[ipic].getTitle());
 			} else
 				oldImps[ipic] = null;
@@ -3144,7 +3353,6 @@ public class GUI extends PluginStatic
 		return directory;
 	}
 
-
 	public void updateSelection() {
 		// image UI
 		// DO NOT update Image list
@@ -3172,7 +3380,8 @@ public class GUI extends PluginStatic
 		// cell filters UI
 		for (int i = 0; i < filterCombbxes.length; i++) {
 			filterCombbxes[i].setSelectedIndex(filter_combs[i]);
-			filterRangeTexts[i].setText(getFilterRange(filterMinRange_texts[i], filterMaxRange_texts[i], filterBackRatio_texts[i]));
+			filterRangeTexts[i].setText(
+					getFilterRange(filterMinRange_texts[i], filterMaxRange_texts[i], filterBackRatio_texts[i]));
 		}
 		CellFilterDialog.reset();
 
@@ -3210,7 +3419,9 @@ public class GUI extends PluginStatic
 
 		// heatmaps UI
 		for (int i = 0; i < heatmapRadiobtns.length; i++) {
-			if (i == heatmap_radio && heatmapRadiobtns[heatmap_radio].isEnabled())
+			if (i != heatmap_radio)
+				continue;
+			if(heatmapRadiobtns[heatmap_radio].isEnabled())
 				heatmapRadiobtns[heatmap_radio].setSelected(true);
 			else
 				heatmap_radio++;
@@ -3243,7 +3454,8 @@ public class GUI extends PluginStatic
 		// analysis subtab
 		for (int i = 0; i < metricTholdRadiobtns.length; i++) {
 			for (int j = 0; j < metricTholdRadiobtns[i].length; j++) {
-				if (j == metricThold_radios[i] && metricTholdRadiobtns[i][j] != null && metricTholdRadiobtns[i][j].isEnabled())
+				if (j == metricThold_radios[i] && metricTholdRadiobtns[i][j] != null
+						&& metricTholdRadiobtns[i][j].isEnabled())
 					metricTholdRadiobtns[i][j].setSelected(true);
 				else
 					metricThold_radios[i]++;
@@ -3304,19 +3516,19 @@ public class GUI extends PluginStatic
 		// need to queue the setValue function otherwise not working
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				customCodeScrollpnl.getVerticalScrollBar().setValue(0);
+				customCodeScrollpn.getVerticalScrollBar().setValue(0);
 			}
 		});
 
 		// Output UI
-		for (int i = 0; i < outputMetricChckbxes.length; i++){
-			if(!outputMetricChckbxes[i].isEnabled())
-				outputMetric_chckes[i]=false;
+		for (int i = 0; i < outputMetricChckbxes.length; i++) {
+			if (!outputMetricChckbxes[i].isEnabled())
+				outputMetric_chckes[i] = false;
 			outputMetricChckbxes[i].setSelected(outputMetric_chckes[i]);
 		}
-		for (int i = 0; i < outputOptChckbxes.length; i++){
-			if(!outputOptChckbxes[i].isEnabled())
-				outputOpt_chckes[i]=false;
+		for (int i = 0; i < outputOptChckbxes.length; i++) {
+			if (!outputOptChckbxes[i].isEnabled())
+				outputOpt_chckes[i] = false;
 			outputOptChckbxes[i].setSelected(outputOpt_chckes[i]);
 		}
 
@@ -3408,11 +3620,9 @@ public class GUI extends PluginStatic
 			heatmapChckbxes[i].setEnabled(true);
 			heatmapColorCombbxes[i].setVisible(true);
 			heatmapColorCombbxes[i].setEnabled(true);
-			for (int j = 0; j < METRICNAMES.length; j++) {
+			for (int j = 0; j < METRICACRONYMS.length; j++) {
 				allFTSpinners[i][j].setVisible(true);
-				allFTSpinners[i][j].setEnabled(
-						metricTholdRadiobtns[j][IDX_THOLD_FT].isSelected()
-						);
+				allFTSpinners[i][j].setEnabled(metricTholdRadiobtns[j][IDX_THOLD_FT].isSelected());
 			}
 			lblFTunits[i].setVisible(true);
 
@@ -3425,9 +3635,10 @@ public class GUI extends PluginStatic
 				}
 			}
 
-			//DefaultComboBoxModel<String> cbm = (DefaultComboBoxModel<String>) matrixMetricCombbx.getModel();
-			//if (cbm.getIndexOf("M" + (i + 1)) < 0)
-			//	cbm.addElement("M" + (i + 1));
+			// DefaultComboBoxModel<String> cbm = (DefaultComboBoxModel<String>)
+			// matrixMetricCombbx.getModel();
+			// if (cbm.getIndexOf("M" + (i + 1)) < 0)
+			// cbm.addElement("M" + (i + 1));
 
 			// some channels might not have input, adjust for that
 			// we need to call updateTicked() after updateGUI()
@@ -3459,7 +3670,7 @@ public class GUI extends PluginStatic
 			heatmapChckbxes[i].setEnabled(false);
 			heatmapColorCombbxes[i].setVisible(false);
 			heatmapColorCombbxes[i].setEnabled(false);
-			for (int j = 0; j < METRICNAMES.length; j++) {
+			for (int j = 0; j < METRICACRONYMS.length; j++) {
 				allFTSpinners[i][j].setVisible(false);
 				allFTSpinners[i][j].setEnabled(false);
 			}
@@ -3471,8 +3682,9 @@ public class GUI extends PluginStatic
 					cbm.removeElement(makeIntFilterString(INTEN_FILTERS[iString], i));
 			}
 
-			//DefaultComboBoxModel<String> cbm = (DefaultComboBoxModel<String>) matrixMetricCombbx.getModel();
-			//cbm.removeElement("M" + (i + 1));
+			// DefaultComboBoxModel<String> cbm = (DefaultComboBoxModel<String>)
+			// matrixMetricCombbx.getModel();
+			// cbm.removeElement("M" + (i + 1));
 
 		}
 
@@ -3482,7 +3694,7 @@ public class GUI extends PluginStatic
 				metricTholdRadiobtns[i][IDX_THOLD_COSTES].setVisible(true);
 				metricTholdRadiobtns[i][IDX_THOLD_COSTES].setEnabled(true);
 			}
-			//lblMetricTholds[IDX_THOLD_ALL].setVisible(true);
+			// lblMetricTholds[IDX_THOLD_ALL].setVisible(true);
 			lblMetricTholds[IDX_THOLD_COSTES].setVisible(true);
 
 			for (int iMetric : METRICS_2D_ONLY) {
@@ -3494,15 +3706,13 @@ public class GUI extends PluginStatic
 				}
 				for (int i = 0; i < nReporters; i++) {
 					allFTSpinners[i][iMetric].setVisible(true);
-					allFTSpinners[i][iMetric].setEnabled(
-							metricTholdRadiobtns[iMetric][IDX_THOLD_FT].isSelected()
-					);
+					allFTSpinners[i][iMetric].setEnabled(metricTholdRadiobtns[iMetric][IDX_THOLD_FT].isSelected());
 				}
 				metricChckbxes[iMetric].setVisible(true);
 				metricChckbxes[iMetric].setEnabled(true);
 			}
 
-		} else if(nReporters == 3){
+		} else if (nReporters == 3) {
 			for (int i = 0; i < metricTholdRadiobtns.length; i++) {
 				metricTholdRadiobtns[i][IDX_THOLD_COSTES].setVisible(false);
 				metricTholdRadiobtns[i][IDX_THOLD_COSTES].setEnabled(false);
@@ -3512,7 +3722,7 @@ public class GUI extends PluginStatic
 					else
 						metricTholdRadiobtns[i][IDX_THOLD_ALL].setSelected(true);
 			}
-			//lblMetricTholds[IDX_THOLD_ALL].setVisible(false);
+			// lblMetricTholds[IDX_THOLD_ALL].setVisible(false);
 			lblMetricTholds[IDX_THOLD_COSTES].setVisible(false);
 
 			for (int iMetric : METRICS_2D_ONLY) {
@@ -3524,9 +3734,7 @@ public class GUI extends PluginStatic
 				}
 				for (int i = 0; i < allFTSpinners.length; i++) {
 					allFTSpinners[i][iMetric].setVisible(false);
-					allFTSpinners[i][iMetric].setEnabled(
-							metricTholdRadiobtns[iMetric][IDX_THOLD_FT].isSelected()
-					);
+					allFTSpinners[i][iMetric].setEnabled(metricTholdRadiobtns[iMetric][IDX_THOLD_FT].isSelected());
 				}
 				metricChckbxes[iMetric].setVisible(false);
 				metricChckbxes[iMetric].setEnabled(false);
@@ -3540,8 +3748,59 @@ public class GUI extends PluginStatic
 		matrixMetricCombbx.setModel(new DefaultComboBoxModel<String>(matrixMetricList));
 
 		CellFilterDialog.syncFilter();
-		
+
 		mainframe.getContentPane().revalidate();
 		mainframe.getContentPane().repaint();
 	}
+
+	/**
+	 * Add in 1.1.0 to take in plugin parameters
+	 */
+	private void setParameters() {
+
+		GenericDialog gd = new GenericDialog(PluginStatic.pluginName + " parameters");
+		gd.addCheckbox("Background Subtraction before thresholding", preBackSub);
+		for (int iBall = 0; iBall < rollingBallSizes.length; iBall++)
+			if (imgCombbxes[iBall].isVisible())
+				gd.addNumericField("Rolling BallSize (" + imgLabels[iBall] + ")", rollingBallSizes[iBall], 0);
+
+		// PluginStatic.PHASE_ROLINGBALL_SIZE;
+		gd.addPanel(new Panel());
+		gd.addCheckbox("Use Manual Background Settings Below", manualBack);
+		for (int iBack = 0; iBack < lightBacks.length; iBack++)
+			if (imgCombbxes[iBack].isVisible())
+				gd.addCheckbox("Light Background (" + imgLabels[iBack] + ")",
+						lightBacks[iBack] != null ? lightBacks[iBack] : false);
+
+		gd.showDialog();
+		if (gd.wasOKed()) {
+			boolean cache_preBackSub = gd.getNextBoolean();
+			boolean changed = cache_preBackSub != preBackSub;
+			if (showThold)
+				resetThr();
+
+			for (int iBall = 0; iBall < rollingBallSizes.length; iBall++)
+				if (imgCombbxes[iBall].isVisible())
+					rollingBallSizes[iBall] = gd.getNextNumber();
+
+			preBackSub = cache_preBackSub;
+
+			if (showThold && changed)
+				updateThr();
+
+			manualBack = gd.getNextBoolean();
+			if (manualBack) {
+				for (int iBack = 0; iBack < lightBacks.length; iBack++)
+					if (imgCombbxes[iBack].isVisible())
+						lightBacks[iBack] = gd.getNextBoolean();
+			} else {
+				for (int iBack = 0; iBack < lightBacks.length; iBack++)
+					if (imgCombbxes[iBack].isVisible())
+						lightBacks[iBack] = null;
+			}
+
+		}
+
+	}
+
 }

@@ -15,7 +15,7 @@ public class MatrixCalculator extends BasicCalculator {
 
 	public static final int DO_MATRIX = PluginConstants.DO_MATRIX, DO_LINEAR_TOS = PluginConstants.DO_LINEAR_TOS,
 			DO_LOG2_TOS = PluginConstants.DO_LOG2_TOS, DO_LN_TOS = PluginConstants.DO_LN_TOS,
-			OPTS_TOS = PluginConstants.OPTS_TOS, RUN_TOS = PluginConstants.RUN_TOS;
+			OPTS_TOS = PluginConstants.OPTS_TOS;
 
 	public static final String SHOW_TOS_LINEAR = "TOS(linear)", SHOW_TOS_LOG2 = "TOS(log2)", SHOW_PCC = "PCC",
 			SHOW_SRC = "SRCC", SHOW_ICQ = "ICQ", SHOW_M1 = "M1", SHOW_M2 = "M2", SHOW_M3 = "M3";
@@ -65,11 +65,8 @@ public class MatrixCalculator extends BasicCalculator {
 		if (!prepCellData(cellC1, cellC2, new int[] { BasicCalculator.THOLD_ALL }))
 			return false;
 
-		if ((options & RUN_TOS) != 0) {
-			if ((options & DO_MATRIX) != 0)
-				mMetric = new double[numOfCell][cutoffs[0] * cutoffs[1]];
-			else
-				mMetric = null;
+		if ((options & DO_MATRIX) != 0) {
+			mMetric = new double[numOfCell][cutoffs[0] * cutoffs[1]];
 
 			for (int iCell = 0; iCell < numOfCell; iCell++) {
 				// also gives TOSmax and TOSmin
@@ -87,13 +84,10 @@ public class MatrixCalculator extends BasicCalculator {
 
 				// get TOSmin and TOSmax are in getmTOS function
 			}
-
+			printmTOS();
 		} else {
 			mMetric = null;
 		}
-
-		if ((options & (DO_MATRIX)) != 0)
-			printmTOS();
 
 		return true;
 	}

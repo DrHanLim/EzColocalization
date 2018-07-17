@@ -9,11 +9,8 @@ import java.util.Map;
 
 import ezcol.cell.CellData;
 import ezcol.cell.DataSorter;
-import ezcol.debug.Debugger;
 import ezcol.debug.ExceptionHandler;
 import ezcol.main.PluginConstants;
-import ezcol.main.PluginStatic;
-import javafx.util.Pair;
 
 public abstract class BasicCalculator {
 
@@ -30,15 +27,17 @@ public abstract class BasicCalculator {
 	// this should match with defaultColumnNames
 	public static final String SHOW_TOS_LINEAR = "TOS(linear)", SHOW_TOS_LOG2 = "TOS(log2)", SHOW_PCC = "PCC",
 			SHOW_SRC = "SRCC", SHOW_ICQ = "ICQ", SHOW_M1 = "M1", SHOW_M2 = "M2", SHOW_M3 = "M3",
-			SHOW_MCC = "M", SHOW_AVGINT = "AVG.Int.C", SHOW_CUSTOM = "Custom";
+			SHOW_MCC = "M", SHOW_AVGINT = "Avg.Int.C", SHOW_CUSTOM = "Custom";
 
 	public static final int LAST_METRIC = 8;
 
-	static final String[] DEFAULT_METRIC_NAMES = { SHOW_TOS_LINEAR, SHOW_TOS_LOG2, SHOW_PCC, SHOW_SRC, SHOW_ICQ, SHOW_MCC,
+	static final String[] DEFAULT_METRIC_ACRONYMS = { SHOW_TOS_LINEAR, SHOW_TOS_LOG2, SHOW_PCC, SHOW_SRC, SHOW_ICQ, SHOW_MCC,
 			SHOW_AVGINT, SHOW_CUSTOM };
 
 	// this part include all variables which are calculated here
-	static final Pair<String, String>[] DEFAULT_INTPNS = makeIntpns();
+	// Change in 1.1.0, for every metric, there is a string array with three elements
+	// name, interpretation, hyperlink
+	static final String[][] DEFAULT_INTPNS = makeIntpns();
 
 	/**
 	 * percentages and can be used as markers
@@ -82,7 +81,7 @@ public abstract class BasicCalculator {
 	 * @return
 	 */
 	public static int getNum() {
-		return DEFAULT_METRIC_NAMES.length;
+		return DEFAULT_METRIC_ACRONYMS.length;
 	}
 
 	/**
@@ -93,9 +92,9 @@ public abstract class BasicCalculator {
 	 * @return the name of i-th metric
 	 */
 	public static String getNames(int i) {
-		if (i < 0 || i >= DEFAULT_METRIC_NAMES.length)
+		if (i < 0 || i >= DEFAULT_METRIC_ACRONYMS.length)
 			return null;
-		return DEFAULT_METRIC_NAMES[i];
+		return DEFAULT_METRIC_ACRONYMS[i];
 	}
 
 	/**
@@ -106,64 +105,128 @@ public abstract class BasicCalculator {
 	 *            the index
 	 * @return
 	 */
-	public static Pair<String, String> getIntpn(int i) {
+	public static String[] getIntpn(int i) {
 		if (i < 0 || i >= DEFAULT_INTPNS.length)
 			return null;
 		return DEFAULT_INTPNS[i];
 	}
 	
-	public static Pair<String, String> getIntpn(int i, int channel) {
+	public static String[] getIntpn(int i, int channel) {
 		if (i < 0 || i >= DEFAULT_INTPNS.length)
 			return null;
-		Pair<String, String> pair =DEFAULT_INTPNS[i];
-		return new Pair<String, String>(pair.getKey()+" of Channel "+channel,pair.getValue());
+		String[] pair =DEFAULT_INTPNS[i];
+		return new String[]{pair[0]+" of Channel "+channel, pair[1]};
 	}
 
 	public static String[] getAllMetrics() {
-		return DEFAULT_METRIC_NAMES.clone();
+		return DEFAULT_METRIC_ACRONYMS.clone();
 	}
 
-	private static Pair<String, String>[] makeIntpns() {
-		@SuppressWarnings("unchecked")
-		Pair<String, String>[] pairs = (Pair<String, String>[]) new Pair[LAST_METRIC];
-		List<String> metricNames = Arrays.asList(DEFAULT_METRIC_NAMES);
-		pairs[metricNames.indexOf(SHOW_TOS_LINEAR)] = new Pair<String, String>("Threshold Overlap Score linearly rescaled (TOS(linear))",
-				"-1 represents complete anti-colocalization\n" + "0 represents non-colocalization\n"
-						+ "1 represents complete colocalization\n" + "\n"
-						+ "The distance of TOS between 0 and 1 or -1 is the distance between \n"
-						+ "the null hypothesis and colocalization or anti-colocalization.\n"
-						+ "For example: 0.5 is halfway between the null distribution and complete overlap \n"
-						+ "of selected percentages.\n");
+	private static String[][] makeIntpns() {
+		String[][] pairs = new String[LAST_METRIC][2];
+		List<String> metricNames = Arrays.asList(DEFAULT_METRIC_ACRONYMS);
+		pairs[metricNames.indexOf(SHOW_TOS_LINEAR)] = new String[]{
+						  "Threshold Overlap Score linearly rescaled [TOS(linear)]",
+				
+						  "TOS(linear) is a measure of the overlap of pixels above the threshold "
+						+ "for two or three reporter channels, normalized for the expected overlap to occur by chance, "
+						+ "which is rescaled so the value is a fraction of the difference between the null hypothesis and "
+						+ "the maximum possible colocalization or anticolocalization for the selected thresholds.\n"
+						+ "For example, 0.5 is halfway between the null distribution and complete overlap for the selected percentages.\n"
+						+ "\n"
+						+ "-1 = complete anticolocalization\n" 
+						+ "0 = noncolocalization\n"
+						+ "1 = complete colocalization\n" 
+						, 
+						
+						"http://bio.biologists.org/content/5/12/1882.long"
+						};
 
-		pairs[metricNames.indexOf(SHOW_TOS_LOG2)] = new Pair<String, String>("Threshold Overlap Score logarithmically rescaled (TOS(log2))",
-				"-1 represents complete anti-colocalization\n" + "0 represents non-colocalization\n"
-						+ "1 represents complete colocalization\n" + "\n"
-						+ "The distance of TOS between 0 and 1 or -1 is the logarithmically scaled distance between \n"
-						+ "the null hypothesis and colocalization or anti-colocalization.\n"
-						+ "For example: 0.5 is halfway between the null distribution and complete overlap \n"
-						+ "of selected percentages on the log scale.\n");
+		pairs[metricNames.indexOf(SHOW_TOS_LOG2)] = new String[]{
+						  "Threshold Overlap Score logarithmically rescaled [TOS(log2)]",
+				
+						  "TOS(log) is the same as TOS(linear) except the rescaling is logarithmic instead of linear.\n"
+						+ "For example: 0.5 is halfway between the null distribution and complete overlap "
+						+ "of selected percentages on the log scale.\n"
+						+ "\n"
+						+ "-1 = complete anticolocalization\n" 
+						+ "0 = noncolocalization\n"
+						+ "1 = complete colocalization\n" 
+						,
+						
+						  "http://bio.biologists.org/content/5/12/1882.long"
+						};
 
-		pairs[metricNames.indexOf(SHOW_PCC)] = new Pair<String, String>("Pearson Correlation Coefficient (PCC)",
-				"-1 represents complete anti-colocalization\n" + "0 represents non-colocalization\n"
-						+ "1 represents complete colocalization\n" + "\n"
-						+ "PCC is the correlation between the two channels for pixel values.\n");
+		pairs[metricNames.indexOf(SHOW_PCC)] = new String[]{
+						  "Pearson's Correlation Coefficient (PCC)",
+				
+						  "PCC measures the correlation between the pixel values for two reporter channels.\n"
+					    + "\n"
+						+ "-1 = complete anticolocalization\n" 
+						+ "0 = noncolocalization\n"
+						+ "1 = complete colocalization\n" 
+						,
+						
+						  "https://en.wikipedia.org/wiki/Pearson_correlation_coefficient"
+						};
 
-		pairs[metricNames.indexOf(SHOW_SRC)] = new Pair<String, String>("Spearman's Rank Correlation Coefficient (SRCC)",
-				"-1 represents complete anti-colocalization\n" + "0 represents non-colocalization\n"
-						+ "1 represents complete colocalization\n" + "\n"
-						+ "SRCC is the ranked correlation of signals given numerical ranks.\n");
+		pairs[metricNames.indexOf(SHOW_SRC)] = new String[]{
+				  		  "Spearman's Rank Correlation Coefficient (SRCC)",
+				
+				  		  "SRCC measures the ranked correlation of pixel values for two reporter channels.\n"
+				  		+ "\n"
+					    + "-1 = complete anticolocalization\n" 
+					    + "0 = noncolocalization\n"
+						+ "1 = complete colocalization\n" 
+						 ,
+						
+						  "https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient"
+						};
 
-		pairs[metricNames.indexOf(SHOW_ICQ)] = new Pair<String, String>("Intensity Correlation Quotient (ICQ)",
-				"0 represents complete anti-colocalization\n" + "0.5 represents non-colocalization\n"
-						+ "1 represents complete colocalization\n" + "\n"
-						+ "ICQ is the proportion of pixels falling either below or above the respective mean in both channels.\n");
+		pairs[metricNames.indexOf(SHOW_ICQ)] = new String[]{
+						  "Intensity Correlation Quotient (ICQ)",
+						  
+						  "ICQ measures the proportion of pixels that "
+						+ "are below or above the mean for all of two or three reporter channels.\n"
+						+ "\n"
+						+ "-0.5 = complete anticolocalization\n" 
+						+ "0 = noncolocalization\n"
+						+ "0.5 = complete colocalization\n" 
+						
+						,
+						  "http://www.jneurosci.org/content/24/16/4070.long"
+						};
+		
+		pairs[metricNames.indexOf(SHOW_MCC)] = new String[]{
+						  "Manders' Colocalization Coefficient (MCC; components M1, M2, and M3)",
+						  
+						  "MCC measures the intensity weighted proportion of signal which overlaps above the thresholds for two or three channels.\n"
+					    + "\n"
+						+  "0 = complete anticolocalization \n" 
+						+ "1 = complete colocalization \n"
+						,
+						
+						  "https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1365-2818.1993.tb03313.x"};
 
-		pairs[metricNames.indexOf(SHOW_AVGINT)] = new Pair<String, String>("Average Signal Intensity",
-				"These are statistics of the average signal in cells.\n");
-
-		pairs[metricNames.indexOf(SHOW_MCC)] = new Pair<String, String>("Mander's Colocalization Coefficient",
-				"0 represents complete anti-colocalization \n" + "1 represents complete colocalization \n"
-						+ "MCC is the degree of colocalization between flourophores \n");
+		pairs[metricNames.indexOf(SHOW_AVGINT)] = new String[]{
+						  "Average Signal Intensity (Avg.Int.)",
+						  
+						  "Selection of the average signal intensity option generates a table that "
+					    + "has the average signal intensity of each reporter channel and "
+					    + "the physical measurements of each cell in the sample.\n",
+						
+						  null
+						  };
+		
+		pairs[metricNames.indexOf(SHOW_CUSTOM)] = new String[]{ 
+						  "Custom Metric",
+						  
+						  "Custom Metric allows users to code their own analysis of "
+						+ "the selected pixel values using mathematical functions in Java. "
+						+ "The calculation of PCC is provided as an example.\n",
+						
+						  null 
+						  };
 		
 		return pairs;
 	}
@@ -1263,3 +1326,4 @@ public abstract class BasicCalculator {
 		return result;
 	}
 }
+

@@ -22,7 +22,7 @@ public class MatrixCalculator3D extends BasicCalculator {
 
 	public static final int DO_MATRIX = PluginConstants.DO_MATRIX, DO_LINEAR_TOS = PluginConstants.DO_LINEAR_TOS,
 			DO_LOG2_TOS = PluginConstants.DO_LOG2_TOS, DO_LN_TOS = PluginConstants.DO_LN_TOS,
-			OPTS_TOS = PluginConstants.OPTS_TOS, RUN_TOS = PluginConstants.RUN_TOS;
+			OPTS_TOS = PluginConstants.OPTS_TOS;
 
 	public static final String SHOW_TOS_LINEAR = "TOS(linear)", SHOW_TOS_LOG2 = "TOS(log2)", SHOW_PCC = "PCC",
 			SHOW_SRC = "SRCC", SHOW_ICQ = "ICQ", SHOW_M1 = "M1", SHOW_M2 = "M2", SHOW_M3 = "M3";
@@ -476,10 +476,15 @@ public class MatrixCalculator3D extends BasicCalculator {
 	}
 
 	public ImageWindow getD3Heatmap(double[] synValues, int[] dimensions) {
+		
+		
 		float[] customScales = getMetricRange(metricIdx);
 		Color[] colorScales = { Color.BLUE, Color.WHITE, Color.RED };
 
 		int numBox = getMatrixSize(dimensions);
+		
+		if(numBox == 0 || synValues == null || synValues.length < numBox)
+			return null;
 
 		float[][] xValues = new float[numBox][1];
 		float[][] yValues = new float[numBox][1];
@@ -563,6 +568,8 @@ public class MatrixCalculator3D extends BasicCalculator {
 	}
 
 	private int getMatrixSize(int[] dimensions) {
+		if(dimensions == null || dimensions.length <= 0)
+			return 0;
 		int result = 1;
 		for (int i = 0; i < dimensions.length; i++) {
 			result *= dimensions[i];
@@ -576,8 +583,11 @@ public class MatrixCalculator3D extends BasicCalculator {
 
 	private double[] getStatsMatrix(double[][] value) {
 
+		if(value == null || value.length <= 0)
+			return null;
+		
 		double[][] tpValue = transpose(value);
-
+		
 		double[] matrix = new double[value[0].length];
 
 		switch (STATS_NAMES[statsMethod]) {

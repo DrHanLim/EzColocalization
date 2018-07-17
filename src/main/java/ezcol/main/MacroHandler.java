@@ -32,11 +32,8 @@ public class MacroHandler extends PluginStatic{
 	private static final String[] MACRO_HEATMAPS = macroStrArray(HEATMAPS);
 	private static final String[] MACRO_HEATMAPOPTS = macroStrArray(HEATMAPOPTS);
 	//analysis macro
-	private static final String[] MACRO_METRICNAMES = macroStrArray(METRICNAMES);
+	private static final String[] MACRO_METRICNAMES = macroStrArray(METRICACRONYMS);
 	private static final String[] MACRO_OTHERNAMES = macroStrArray(OTHERNAMES);
-	private static final String[] MACRO_TOSOPTS = macroStrArray(TOSOPTS);
-	//private static final String[] MACRO_DIST_CHOICES = macroStrArray(DIST_CHOICES);
-	private static final String[] MACRO_ALLDISTTHOLDS = macroStrArray(ALLDISTTHOLDS);
 	//output macro
 	private static final String[] MACRO_OUTPUTMETRICS = macroStrArray(OUTPUTMETRICS);
 	private static final String[] MACRO_OUTPUTOTHERS = macroStrArray(OUTPUTOTHERS);
@@ -435,54 +432,6 @@ public class MacroHandler extends PluginStatic{
 			allTholds[allTholds.length-1] = BasicCalculator.THOLD_ALL;
 		else
 			allTholds[allTholds.length-1] = BasicCalculator.THOLD_NONE;
-  		
-  		/*
-  		start=arg.indexOf("dist=");
-  		if(start==-1){
-  			whichDist = DEFAULT_CHOICE;
-  		}else{
-  			start += ("dist".length()+1);
-	        end=arg.indexOf(" ", start);
-	        if ((arg.charAt(start)+"").equals("[")){
-	            start++;
-	            end=arg.indexOf("]", start);
-	        }
-	  		whichDist = Arrays.asList(MACRO_DIST_CHOICES).indexOf(arg.substring(start, end));
-  		}
-  		*/
-		for(int iThold=0;iThold<whichDistTholds.length;iThold++){
-        	start=arg.indexOf("distthold"+(iThold+1)+"=");
-        	if(start==-1){
-        		whichDistTholds[iThold] = DEFAULT_CHOICE;
-        	}else{
-  	        	start += ("distthold"+(iThold+1)+"=").length();
-  	            end=arg.indexOf(" ", start);
-  	            if ((arg.charAt(start)+"").equals("[")){
-  	                start++;
-  	                end=arg.indexOf("]", start);
-  	            }
-  	            String thresholdMethod=arg.substring(start, end);
-  	            whichDistTholds[iThold] = Arrays.asList(MACRO_ALLDISTTHOLDS).indexOf(thresholdMethod);
-  	            whichDist = DIST_THOLD;
-        	}
-        }
-	  			
-		for(int iDist=0;iDist<numOfDistFTs.length;iDist++){
-  			start=arg.indexOf("distft"+(iDist+1)+"=");
-  			if(start==-1){
-  				numOfDistFTs[iDist] = DEFAULT_FT;
-        	}else{
-	  			start += ("distft"+(iDist+1)+"=").length();
-	  	        end=arg.indexOf(" ", start);
-	  	        if ((arg.charAt(start)+"").equals("[")){
-	  	            start++;
-	  	            end=arg.indexOf("]", start);
-	  	        }
-	  	        String thisFT=arg.substring(start, end);
-	  			numOfDistFTs[iDist]=(int)parseDouble(thisFT);
-	  			whichDist = DIST_FT;
-        	}
-  		}
 
   		for(int iColumn=0;iColumn<outputMetric_chckes.length;iColumn++){
   			start = arg.indexOf(MACRO_OUTPUTMETRICS[iColumn]);
@@ -578,20 +527,6 @@ public class MacroHandler extends PluginStatic{
   			for(int iMetric=0;iMetric<allFT_spins[iChannel].length;iMetric++)
   				Recorder.recordOption("allft-c"+(iChannel+1)+"-"+(iMetric+1),""+allFT_spins[iChannel][iMetric]);
   		
-  		//Recorder.recordOption(DIST_CHOICES[whichDist]);
-  		/*switch(whichDist){
-	  		case DIST_THOLD:
-	  			for(int iDist=0;iDist<numOfDistFTs.length;iDist++)
-	  	  			Recorder.recordOption("distft"+(iDist+1),""+numOfDistFTs[iDist]);
-	  			break;
-	  		case DIST_FT:
-	  			for(int iThold=0;iThold<whichDistTholds.length;iThold++)
-	  	        	Recorder.recordOption("distthold"+(iThold+1),MACRO_ALLDISTTHOLDS[whichDistTholds[iThold]]);
-	  			break;
-  			default:
-  				break;
-  		}*/
-        
   		for(int iColumn=0;iColumn<outputMetric_chckes.length;iColumn++)
         	if(outputMetric_chckes[iColumn])
 				Recorder.recordOption(MACRO_OUTPUTMETRICS[iColumn]);
@@ -742,13 +677,13 @@ public class MacroHandler extends PluginStatic{
     	return null;
     }
     
-    public static void closeRecorder(){
+    public static void recordCloseAll(){
     	Recorder.setCommand(pluginName);
     	Recorder.recordOption("close_all");
     	Recorder.saveCommand();
     }
     
-    public static void saveRecorder(String dir){
+    public static void recordSaveAll(String dir){
     	Recorder.setCommand(pluginName);
     	Recorder.recordPath("save_all",dir);
     	Recorder.saveCommand();

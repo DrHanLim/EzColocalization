@@ -246,7 +246,11 @@ public class ScatterPlotGenerator {
 	}
 
 	public PlotStackWindow show() {
-		psw = new PlotStackWindow(plots, imp, this);
+		
+		if(plots != null && imp != null)
+			psw = new PlotStackWindow(plots, imp, this);
+		else
+			psw = null;
 		// psw.showStack();
 		return psw;
 	}
@@ -277,7 +281,7 @@ public class ScatterPlotGenerator {
 		// addLegend will automatically do that
 		// Otherwise, it won't show up on the plot until the user zoom
 		addRegressionLine();
-		for (int iSlice = 0; iSlice < nPlots; iSlice++) {
+		for (int iSlice = 0; iSlice < nPlots ; iSlice++) {
 			double[] tholds = costesTholder.getCostesThrd(xValues[iSlice], yValues[iSlice]);
 			addDashLines((float) tholds[0], (float) tholds[1], iSlice);
 			plots[iSlice].addLegend("Data    --- Costes");

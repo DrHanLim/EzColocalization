@@ -61,6 +61,7 @@ public class ScatterPlot3D {
 
 	public ScatterPlot3D(String xLabel1, String yLabel1, String zLabel1, float[][] xValues1, float[][] yValues1,
 			float[][] zValues1) {
+		
 		xValues = xValues1;
 		yValues = yValues1;
 		zValues = zValues1;

@@ -71,7 +71,7 @@ public class CostesThreshold {
 	}
 	
 	private double[] getCostesThrd(float[] Aarray, float[] Barray, double slope, double intercept) {
-		if (Aarray == null || Barray == null)
+		if (Aarray == null || Barray == null || Aarray.length <= 1 || Barray.length <= 1)
 			return new double[] { Double.NaN, Double.NaN };
 		int len = Aarray.length < Barray.length ? Aarray.length : Barray.length;
 		double Asum = 0.0, Bsum = 0.0, ABsum = 0.0, A2sum = 0.0, B2sum = 0.0;
@@ -222,15 +222,20 @@ public class CostesThreshold {
 
 			//projBarray[i] = temp;
 			//projBarray[i + len] = Barray[i];
-			if (sortedIdxes[CostesIdx] < len) {
-				thresholds[0] = Aarray[sortedIdxes[CostesIdx]];
-				thresholds[1] = projBarray[sortedIdxes[CostesIdx]];
-			}else if (sortedIdxes[CostesIdx] < 2 * len) {
-				thresholds[0] = (projBarray[sortedIdxes[CostesIdx]] - intercept) / slope;
-				thresholds[1] = projBarray[sortedIdxes[CostesIdx]];
-			}else{
+			if(CostesIdx < 0 || CostesIdx >= sortedIdxes.length){
 				ExceptionHandler.addError(Thread.currentThread(),
-						"Unprecedented error 2 occurs in CostesThreshold");
+						"Cannot compute Costes' thesholds");
+			}else{
+				if (sortedIdxes[CostesIdx] < len) {
+					thresholds[0] = Aarray[sortedIdxes[CostesIdx]];
+					thresholds[1] = projBarray[sortedIdxes[CostesIdx]];
+				}else if (sortedIdxes[CostesIdx] < 2 * len) {
+					thresholds[0] = (projBarray[sortedIdxes[CostesIdx]] - intercept) / slope;
+					thresholds[1] = projBarray[sortedIdxes[CostesIdx]];
+				}else{
+					ExceptionHandler.addError(Thread.currentThread(),
+							"Unprecedented error 2 occurs in CostesThreshold");
+				}
 			}
 		} else {
 
@@ -285,12 +290,17 @@ public class CostesThreshold {
 				}
 			}
 			
-			if(projBarray[sortedIdxes[CostesIdx]] < Barray[sortedIdxes[CostesIdx]]){
-				thresholds[0] = Aarray[sortedIdxes[CostesIdx]];
-				thresholds[1] = projBarray[sortedIdxes[CostesIdx]];
+			if(CostesIdx < 0 || CostesIdx >= sortedIdxes.length){
+				ExceptionHandler.addError(Thread.currentThread(),
+						"Cannot compute Costes' thesholds");
 			}else{
-				thresholds[0] = (projBarray[sortedIdxes[CostesIdx]] - intercept) / slope;
-				thresholds[1] = projBarray[sortedIdxes[CostesIdx]];
+				if(projBarray[sortedIdxes[CostesIdx]] < Barray[sortedIdxes[CostesIdx]]){
+					thresholds[0] = Aarray[sortedIdxes[CostesIdx]];
+					thresholds[1] = projBarray[sortedIdxes[CostesIdx]];
+				}else{
+					thresholds[0] = (projBarray[sortedIdxes[CostesIdx]] - intercept) / slope;
+					thresholds[1] = projBarray[sortedIdxes[CostesIdx]];
+				}
 			}
 		}
 		return thresholds;

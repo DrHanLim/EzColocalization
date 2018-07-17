@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import java.util.HashMap;
 
+import ezcol.debug.Debugger;
 import ij.*;
 import ij.gui.Roi;
 import ij.gui.ShapeRoi;
@@ -99,7 +100,7 @@ public class CellFinder {
 
 	public void setMask(ByteProcessor ip, Calibration cal) {
 		if (ip != null) {
-			mask = new ImagePlus("Mask", ip);
+			mask = new ImagePlus("Mask", ip.duplicate());
 			mask.setCalibration(cal);
 		} else {
 			mask = new ImagePlus();
@@ -146,22 +147,31 @@ public class CellFinder {
 		}
 	}
 
-	// use two step intensity based thresholding method to get particles
+	/** use two step intensity based thresholding method to get particles
+	 *  It's interesting that ParticleAnalyzer is robust to LUT and Inverting if it's run twice
+	 * @param waterShed
+	 */
 	public void getParticles(boolean waterShed) {
 		ImagePlus mask1;
 		rt1 = new ResultsTable();
 		// 2616063 WITHOUT STACK
 		// 4188927 EVERYTHING
+		
 		cellParticles1 = new ParticleAnalyzerMT(preAnalysis, measurePhase, rt1, minSize1, maxSize1, minCirc1, maxCirc1);
 		cellParticles1.setHideOutputImage(true);
 		cellParticles1.setHyperstack(mask);
 		// cellParticles1.setThreadResultsTable(rt1);
 		cellParticles1.analyze(mask);
 		mask1 = cellParticles1.getOutputImage();
+		
 		if (waterShed) {
 			EDM waterSheded = new EDM();
 			waterSheded.toWatershed(mask1.getProcessor());
 		}
+		
+		if(Prefs.blackBackground)
+			mask1.getProcessor().invert();
+		
 		Binary fillHoles = new Binary();
 		fillHoles.setup("fill", mask1);
 		fillHoles.run(mask1.getProcessor());
@@ -578,9 +588,9 @@ public class CellFinder {
 		if (rois == null)
 			return null;
 		ShortProcessor drawIP = new ShortProcessor(width, height);
-		drawIP.setColor(Color.black);
+		drawIP.setColor(Color.BLACK);
 		drawIP.fill();
-		drawIP.setColor(Color.white);
+		drawIP.setColor(Color.WHITE);
 		int grayLevel = 0;
 		for (int i = 0; i < rois.length; i++) {
 			grayLevel = i <= 65535 ? (i + 1) : 65535;

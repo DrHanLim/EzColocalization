@@ -3,6 +3,7 @@ package ezcol.main;
 import java.awt.Color;
 import java.awt.Frame;
 import java.io.File;
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Vector;
 
 import ezcol.cell.CellFinder;
+import ezcol.debug.Debugger;
 import ezcol.debug.ExceptionHandler;
 import ezcol.files.FilesIO;
 import ezcol.metric.MatrixCalculator;
@@ -24,15 +26,18 @@ import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.Prefs;
 import ij.WindowManager;
 import ij.gui.ImageWindow;
 import ij.gui.Roi;
+import ij.gui.Toolbar;
 import ij.macro.Interpreter;
 import ij.measure.ResultsTable;
 import ij.plugin.frame.Editor;
 import ij.plugin.frame.PlugInFrame;
 import ij.plugin.frame.RoiManager;
 import ij.process.AutoThresholder;
+import ij.process.AutoThresholder.Method;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 import ij.text.TextWindow;
@@ -103,7 +108,6 @@ public abstract class PluginStatic implements PluginConstants {
 	public static final int[] LIST_OTHERS = { // DO_CEN2NPOLE, DO_CEN2CEN,
 			DO_AVGINT, DO_CUSTOM };
 	public static final int[] LIST_TOS = { DO_LINEAR_TOS, DO_LOG2_TOS };
-	public static final int[] LIST_DIST = { DO_DIST_THOLD, DO_DIST_FT };
 	public static final int[] LIST_HEATMAPOPTS = { DO_HEAT_CELL, DO_HEAT_IMG, DO_HEAT_STACK };
 	public static final int[] LIST_OUTPUTMETRICS = { DO_SUMMARY, DO_HIST };
 	public static final int[] LIST_OUTPUTOTHERS = { DO_MASKS, DO_ROIS };
@@ -123,7 +127,46 @@ public abstract class PluginStatic implements PluginConstants {
 	static int nbImgs;
 
 	// alignment parameters
-	static final String[] ALLTHOLDS = AutoThresholder.getMethods();
+	// Add in 1.1.0 to represent manual threshold option in alignThold_combs
+	public static final String MANUAL_THOLD = "*Manual*";
+	static final String[] ALLTHOLDS;
+	static{
+		String[] autoMethods = AutoThresholder.getMethods();
+		String manual_thold = MANUAL_THOLD.replace("*", "");
+		ALLTHOLDS = new String[autoMethods.length + 1];
+		int iThold = 0;
+		for (iThold = 0; iThold < autoMethods.length; iThold++){
+			if (manual_thold.compareTo(autoMethods[iThold]) < 0){
+				ALLTHOLDS[iThold] = MANUAL_THOLD;
+				iThold++;
+				break;
+			}else{
+				ALLTHOLDS[iThold] = autoMethods[iThold];
+			}
+		}
+		for (; iThold < ALLTHOLDS.length; iThold++){
+			ALLTHOLDS[iThold] = autoMethods[iThold - 1];
+		}
+		//System.arraycopy(autoMethods, 0, ALLTHOLDS, 0, autoMethods.length);
+		//ALLTHOLDS[autoMethods.length] = MANUAL_THOLD;
+	}
+	// Add in 1.1.0 to allow value presence search of Methods in AutoThresholder
+	static final Map<String, Method> THRESHOLD_METHODS;
+	static{
+		THRESHOLD_METHODS = new HashMap<String, Method>(Method.values().length);
+		for (Method method : Method.values()) {
+			THRESHOLD_METHODS.put(method.name(), method);
+	    }
+	}
+	// Add in 1.1.0 to choose whether to do background subtraction before applying thresholds
+	static boolean preBackSub = DEFAULT_BOOLEAN;
+	static double[] rollingBallSizes = newArray(DEFAULT_ROLLINGBALL_SIZE, MAX_NCHANNELS);
+	// Add in 1.1.0 to choose whether to use skewness to automatically detect lightbackground
+	static boolean manualBack = DEFAULT_BOOLEAN;
+	static Boolean[] lightBacks = newArray(Boolean.class, (Boolean) null, MAX_NCHANNELS);
+	
+	// Add in 1.1.0 to store manually selected thresholds
+	static double[][] manualTholds = newArray(ImageProcessor.NO_THRESHOLD, MAX_NCHANNELS, 2);
 	static boolean[] align_chckes = newArray(DEFAULT_BOOLEAN, MAX_NREPORTERS);
 	static int[] alignThold_combs = newArray(DEFAULT_CHOICE, MAX_NCHANNELS);
 	// static boolean[] darkBacks = {true,true,false};
@@ -196,15 +239,10 @@ public abstract class PluginStatic implements PluginConstants {
 	static final int STEPFT = 1;
 	static int[] matrixFT_spin = newArray(DEFAULT_FT, MAX_NREPORTERS);
 
-	/** mTOS parameters **/
-	static final String[] TOSOPTS = { "linear", "log2" };
-	static int mTOSscale = DEFAULT_CHOICE;
-
 	// heatmaps parameters
 	static final String[] HEATMAPS = { "hot", "cool", "fire", "grays", "ice", "spectrum", "3-3-2 RGB", "red", "green",
 			"blue", "cyan", "magenta", "yellow", "redgreen" };
 	static final String[] HEATMAPOPTS = { "cell", "image", "stack" };
-	// static final String[] WHICHHEATMAPS = {"Channel 1", "Channel 2"};
 	static boolean[] heatmap_chckes = newArray(DEFAULT_BOOLEAN, MAX_NREPORTERS);
 	static int heatmap_radio = DEFAULT_CHOICE;
 	// Again we don't use default choice here because it's determined by whether
@@ -214,53 +252,34 @@ public abstract class PluginStatic implements PluginConstants {
 
 	// metric parameters
 	static final String[] OTHERNAMES = { "Average Signal", "Custom Metric" };
-	public static final String[] METRICNAMES = { "TOS", "PCC", "SRCC", "ICQ", "MCC" };
+	//This must be consistent with METRICACRONYMS
+	public static final String[] METRICACRONYMS = { "TOS", "PCC", "SRCC", "ICQ", "MCC" };
+	public static final String[] METRICNAMES = {"Threshold Overlap Score", 
+			"Pearson's Correlation Coefficient", "Spearman's Rank Correlation Coefficient", 
+			"Intensity Correlation Quotient", "Manders' Colocalization Coefficient (M1, M2, and M3)"};
 	public static final int AVG_INT = 0, CUSTOM = 1;
 	public static final int TOS = 0, PCC = 1, SRCC = 2, ICQ = 3, MCC = 4;
 	// The index of "All" in METRIC_THOLDS
 	protected static final int IDX_THOLD_ALL = 0, IDX_THOLD_COSTES = 1, IDX_THOLD_FT = 2;
 	static final String[] METRIC_THOLDS = { "All", "Costes'", "FT" };
-	static final String[] METRIC_THOLDS_TIPS = { "All pixels", "Costes' algorithm",
-			"Selected fraction percentage" };
+	static final String[] METRIC_THOLDS_TIPS = { "All Pixels", "Costes' Algorithm",
+			"Top Percentile of Pixels Threshold" };
 
 	protected static final List<Integer> NO_THOLD_ALL = Arrays.asList(new Integer[] { TOS, MCC });
 
-	static boolean[] metric_chckes = newArray(DEFAULT_BOOLEAN, METRICNAMES.length);
+	static boolean[] metric_chckes = newArray(DEFAULT_BOOLEAN, METRICACRONYMS.length);
 	static boolean[] other_chckes = newArray(DEFAULT_BOOLEAN, OTHERNAMES.length);
 
-	static int[] metricThold_radios = newArray(DEFAULT_CHOICE, METRICNAMES.length);
-	static int[][] allFT_spins = newArray(DEFAULT_FT, MAX_NREPORTERS, METRICNAMES.length);
+	static int[] metricThold_radios = newArray(DEFAULT_CHOICE, METRICACRONYMS.length);
+	static int[][] allFT_spins = newArray(DEFAULT_FT, MAX_NREPORTERS, METRICACRONYMS.length);
 	// NO NEED TO LOAD BUT TO RETRIEVE
 	static int[] allTholds;
-
-	// 3D TOS parameters
-	// public static final int D3_TOS = 0;
-	// public static final String D3_NAME = "3D-TOS";
-
-	// DistancesX parameters
-	static final String[] ALLDISTTHOLDS = AutoThresholder.getMethods();
-	static final int MINDISTFT = DEFAULT_MIN_FT;
-	static final int MAXDISTFT = DEFAULT_MAX_FT;
-	// We need two markers here for macro to know which to record
-	static final int DIST_THOLD = 0, DIST_FT = 1;
-	static final String[] DIST_CHOICES = { "threshold", "fraction" };
-	static int whichDist = DEFAULT_CHOICE;
-	static int[] numOfDistFTs = newArray(DEFAULT_FT, MAX_NREPORTERS);
-	static int[] whichDistTholds = newArray(DEFAULT_CHOICE, MAX_NREPORTERS);
 
 	// Custom parameters
 	static String customCode_text = "";
 	static boolean custom_chck = DEFAULT_BOOLEAN;
 
-	// 3D TOS parameters
-	static final String IMGTIPS3DTOS = "Choose Channel 3 for 3D TOS";
-	static boolean doD3TOS = DEFAULT_BOOLEAN;
-	static int[] tosFTs = newArray(DEFAULT_FT, 3);
-	static int[] tosTholds;
-
 	// Output parameters
-	// public static final int RT = 0, STD = 1, MEAN = 2, MEDIAN = 3, HIST = 4;
-	// public static final int MASK = 0, ROI = 1;
 	static final String[] OUTPUTMETRICS = { "Summary", "Histogram(s)" };
 	static final String[] OUTPUTOTHERS = { "Mask(s)", "ROI(s)" };
 	static boolean[] outputMetric_chckes = newArray(DEFAULT_BOOLEAN, OUTPUTMETRICS.length);
@@ -425,41 +444,9 @@ public abstract class PluginStatic implements PluginConstants {
 			changed = true;
 		}
 
-		if (mTOSscale < 0 || mTOSscale >= TOSOPTS.length) {
-			mTOSscale = DEFAULT_CHOICE;
-			changed = true;
-		}
-
 		for (int iTOS = 0; iTOS < matrixFT_spin.length; iTOS++) {
 			if (matrixFT_spin[iTOS] < MINFT || matrixFT_spin[iTOS] > MAXFT) {
 				matrixFT_spin[iTOS] = DEFAULT_FT;
-				changed = true;
-			}
-
-		}
-
-		if (whichDist < 0 || whichDist >= DIST_CHOICES.length) {
-			whichDist = DEFAULT_CHOICE;
-			changed = true;
-		}
-
-		for (int iDist = 0; iDist < whichDistTholds.length; iDist++) {
-			if (whichDistTholds[iDist] >= ALLDISTTHOLDS.length || whichDistTholds[iDist] < 0) {
-				whichDistTholds[iDist] = DEFAULT_CHOICE;
-				changed = true;
-			}
-		}
-
-		for (int iDist = 0; iDist < numOfDistFTs.length; iDist++) {
-			if (numOfDistFTs[iDist] < MINDISTFT || numOfDistFTs[iDist] > MAXDISTFT) {
-				numOfDistFTs[iDist] = DEFAULT_FT;
-				changed = true;
-			}
-		}
-
-		for (int iTOS = 0; iTOS < tosFTs.length; iTOS++) {
-			if (tosFTs[iTOS] < MINFT || tosFTs[iTOS] > MAXFT) {
-				tosFTs[iTOS] = DEFAULT_FT;
 				changed = true;
 			}
 
@@ -508,12 +495,6 @@ public abstract class PluginStatic implements PluginConstants {
 				options |= DO_RESULTTABLE;
 			}
 
-		/*
-		 * if((options&RUN_TOS)!=0) options|=LIST_TOS[mTOSscale];
-		 * 
-		 * if((options&RUN_DIST)!=0) options|=LIST_DIST[whichDist];
-		 */
-
 		if (custom_chck)
 			options |= DO_CUSTOM;
 
@@ -540,6 +521,14 @@ public abstract class PluginStatic implements PluginConstants {
 	 */
 	public static String[] getFilterStrings() {
 		return filterStrings.clone();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static<T> T[] newArray(Class<T> clazz, T value, int length){
+		T[] result = (T[]) Array.newInstance(clazz, length);
+		for (int i = 0; i < length; i++)
+			result[i] = value;
+		return result;
 	}
 
 	public static double[] newArray(double value, int length) {
@@ -570,10 +559,10 @@ public abstract class PluginStatic implements PluginConstants {
 		return result;
 	}
 
-	public static int[][] newArray(int value, int width, int height) {
-		int[][] result = new int[width][height];
-		for (int i = 0; i < width; i++)
-			for (int j = 0; j < height; j++)
+	public static int[][] newArray(int value, int height, int width) {
+		int[][] result = new int[height][width];
+		for (int i = 0; i < height; i++)
+			for (int j = 0; j < width; j++)
 				result[i][j] = value;
 		return result;
 	}
@@ -584,11 +573,27 @@ public abstract class PluginStatic implements PluginConstants {
 			result[i] = arr.clone();
 		return result;
 	}
+	
+	public static double[][] newArray(double value, int height, int width) {
+		double[][] result = new double[height][width];
+		for (int i = 0; i < height; i++)
+			for (int j = 0; j < width; j++)
+				result[i][j] = value;
+		return result;
+	}
 
 	public static double[][] newArray(double[] arr, int length) {
 		double[][] result = new double[length][arr.length];
 		for (int i = 0; i < length; i++)
 			result[i] = arr.clone();
+		return result;
+	}
+	
+	public static float[][] newArray(float value, int height, int width) {
+		float[][] result = new float[height][width];
+		for (int i = 0; i < height; i++)
+			for (int j = 0; j < width; j++)
+				result[i][j] = value;
 		return result;
 	}
 
@@ -614,7 +619,6 @@ public abstract class PluginStatic implements PluginConstants {
 				result.fill(rois[i]);
 		}
 		result.resetRoi();
-		result.invert();
 		return result;
 	}
 
@@ -798,10 +802,6 @@ public abstract class PluginStatic implements PluginConstants {
 		// Output parameters
 		Arrays.fill(outputMetric_chckes, DEFAULT_BOOLEAN);
 		Arrays.fill(outputOpt_chckes, DEFAULT_BOOLEAN);
-
-		// 3d TOS
-		Arrays.fill(tosFTs, DEFAULT_FT);
-		tosTholds = null;
 	}
 
 	public static void chooseAll() {
@@ -1131,6 +1131,19 @@ public abstract class PluginStatic implements PluginConstants {
 			return MatrixCalculator.getAllMetrics();
 		else if (dimension == 3)
 			return MatrixCalculator3D.getAllMetrics();
+		else
+			return null;
+	}
+	
+	/**
+	 * Return the selected method;
+	 * return null if the method cannot be found
+	 * @param name
+	 * @return
+	 */
+	public static Method getMethod(String name){
+		if(THRESHOLD_METHODS.containsKey(name))
+			return THRESHOLD_METHODS.get(name);
 		else
 			return null;
 	}
