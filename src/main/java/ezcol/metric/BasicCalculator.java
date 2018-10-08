@@ -579,7 +579,6 @@ public abstract class BasicCalculator {
 					int length = dataA.length < dataB.length ? dataA.length : dataB.length;
 					costesCs[0][i] = new CellData(cellCs[0][i].length());
 					costesCs[1][i] = new CellData(cellCs[1][i].length());
-
 					for (int ip = 0; ip < length; ip++) {
 						if (dataA[ip] > costes[0])
 							costesCs[0][i].setData(dataA[ip], cellCs[0][i].getPixelX(ip), cellCs[0][i].getPixelY(ip),
@@ -595,7 +594,8 @@ public abstract class BasicCalculator {
 							costesCs[1][i].setData(Float.NaN, cellCs[1][i].getPixelX(ip), cellCs[1][i].getPixelY(ip),
 									ip);
 					}
-					costesCs[1][i].sort();
+					
+					costesCs[0][i].sort();
 					costesCs[1][i].sort();
 				}
 				break;
@@ -747,13 +747,6 @@ public abstract class BasicCalculator {
 			tos_log2 = m * Math.log(n * (poratioselected - 1) + 1) / log2;
 
 			if (Double.isNaN(tos_log2)) {
-				/*
-				 * Debugger.print1("size: "+size); Debugger.print1("A: "+A+
-				 * ", B: "+B+", AandB: "+AandB); Debugger.print1("n: "+n+
-				 * ", poratioselected: "+poratioselected+" log(x): "
-				 * +(n*poratioselected+1-n)); Debugger.print1("tos_linear: "
-				 * +tos_linear+", tos_log2: "+tos_log2);
-				 */
 				ExceptionHandler.addError(Thread.currentThread(), "Error in calculationg log TOS");
 			}
 		} else if (exp1 == 0.5 || exp2 == 0.5) {
@@ -801,14 +794,8 @@ public abstract class BasicCalculator {
 		}
 		a = Arrays.copyOfRange(a, 0, num);
 		b = Arrays.copyOfRange(b, 0, num);
-
-		// Debugger.print2RT(a, "A").show("A");
-		// Debugger.print2RT(b, "B").show("B");
-
 		double aMean = getMean(a);
 		double bMean = getMean(b);
-
-		// System.out.println("bMean: "+bMean+", bSTD: "+getSTD(b,bMean));
 
 		float[] c = a.clone();
 		for (int i = 0; i < a.length; i++)
@@ -847,17 +834,8 @@ public abstract class BasicCalculator {
 		rankA = Arrays.copyOfRange(rankA, 0, num);
 		rankB = Arrays.copyOfRange(rankB, 0, num);
 
-		// Debugger.print2RT(rankA, "rankA").show("rankA");
-		// Debugger.print2RT(rankB, "rankB").show("rankB");
-
 		// we use double instead of integer here to avoid out of range
 		// because the number of pixels in one image could be very large
-		/*
-		 * double size = num; double sumRank = 0.0; for(int i=0;i<size;i++)
-		 * sumRank+=(rankA[i]-rankB[i])*(rankA[i]-rankB[i]);
-		 * 
-		 * return (1-6*sumRank/(size*(size*size-1)));
-		 */
 
 		double aMean = getMean(rankA);
 		double bMean = getMean(rankB);
@@ -1152,7 +1130,6 @@ public abstract class BasicCalculator {
 				}
 			}
 		}
-
 		for (int iChannel = 0; iChannel < data.length; iChannel++) {
 			overlaps[iChannel] /= denominators[iChannel];
 		}
