@@ -45,3 +45,15 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 
 ## Demo
 [![A demo on YouTube](https://i.imgur.com/d5JzfQx.jpg)](https://www.youtube.com/watch?v=OlXrA3613EE&feature=youtu.be)
+
+## Citation
+@article{stauffer2018ezcolocalization,
+  title={EzColocalization: An ImageJ plugin for visualizing and measuring colocalization in cells and organisms},
+  author={Stauffer, Weston and Sheng, Huanjie and Lim, Han N},
+  journal={Scientific Reports},
+  volume={8},
+  number={1},
+  pages={15764},
+  year={2018},
+  publisher={Nature Publishing Group}
+}
