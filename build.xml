@@ -10,7 +10,7 @@
 	<property name="user.name" value="Unknown" />
 	<property name="version" value="1.0.0" />
 	<property name="imagejVersion" value="1.50e" />
-
+	
 	<echo>
 			Building the .property file.
 	</echo>
