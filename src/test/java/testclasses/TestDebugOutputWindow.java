@@ -4,10 +4,10 @@ import java.util.Random;
 
 import ezcol.visual.visual2D.OutputWindow;
 
-public class DebugOutputWindow extends OutputWindow{
+public class TestDebugOutputWindow extends OutputWindow{
 
 	
-	public DebugOutputWindow(){
+	public TestDebugOutputWindow(){
 		
 		addImage("Channel 1", null);
 		addImage("Channel 2", null);

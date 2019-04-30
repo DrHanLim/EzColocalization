@@ -1,10 +1,7 @@
-import javax.tools.ToolProvider;
-
 import ezcol.main.AnalysisOperator;
 import ezcol.main.GUI;
 import ezcol.main.MacroHandler;
 import ezcol.main.PluginStatic;
-import ij.IJ;
 import ij.Macro;
 import ij.plugin.PlugIn;
 
@@ -12,7 +9,7 @@ import ij.plugin.PlugIn;
  * This class is put in the default package so that
  * ImageJ could automatically load the plugin
  * Some of 
- * @author Huanjie Sheng
+ * @author Huanjie Sheng, Weston Stauffer, Han N. Lim
  *
  */
 public class EzColocalization_ implements PlugIn{

@@ -169,6 +169,78 @@ public class Debugger implements PluginConstants {
 		}
 	}
 	
+	public static void print(float[][] cellData){
+		if (cellData == null) {
+			System.out.println("input data is null");
+			return;
+		}
+		if (cellData.length == 0) {
+			System.out.println("input data has 0 element");
+			return;
+		}
+		for (int i = 0; i < cellData.length; i++){
+			if (cellData[i] != null){
+				for (int j = 0; j < cellData[i].length; j++)
+					System.out.print(cellData[i][j] + " ");
+			}
+			System.out.println();
+		}
+	}
+	
+	public static void print(int[][] cellData){
+		if (cellData == null) {
+			System.out.println("input data is null");
+			return;
+		}
+		if (cellData.length == 0) {
+			System.out.println("input data has 0 element");
+			return;
+		}
+		for (int i = 0; i < cellData.length; i++){
+			if (cellData[i] != null){
+				for (int j = 0; j < cellData[i].length; j++)
+					System.out.print(cellData[i][j] + " ");
+			}
+			System.out.println();
+		}
+	}
+	
+	public static void print(double[][] cellData){
+		if (cellData == null) {
+			System.out.println("input data is null");
+			return;
+		}
+		if (cellData.length == 0) {
+			System.out.println("input data has 0 element");
+			return;
+		}
+		for (int i = 0; i < cellData.length; i++){
+			if (cellData[i] != null){
+				for (int j = 0; j < cellData[i].length; j++)
+					System.out.print(cellData[i][j] + " ");
+			}
+			System.out.println();
+		}
+	}
+	
+	public static void print(byte[][] cellData){
+		if (cellData == null) {
+			System.out.println("input data is null");
+			return;
+		}
+		if (cellData.length == 0) {
+			System.out.println("input data has 0 element");
+			return;
+		}
+		for (int i = 0; i < cellData.length; i++){
+			if (cellData[i] != null){
+				for (int j = 0; j < cellData[i].length; j++)
+					System.out.print(cellData[i][j] + " ");
+			}
+			System.out.println();
+		}
+	}
+	
 	public static<T> void print(T[] data){
 		for(T element: data){
 			System.out.println(element);

@@ -2,13 +2,13 @@
 	<description>
         Test_Plugin build file
     </description>
-	<property name="src" location="src/main/java" />
+	<property name="src" location="src/main" />
 	<property name="build" location="bin" />
 	<property name="dist" location="dist" />
 	<property name="pluginName" location="EzColocalization_.jar" />
 	<property name="pluginsDir" location="$basedir/../../IJ/plugins/" />
 	<property name="user.name" value="Unknown" />
-	<property name="version" value="1.0.0" />
+	<property name="version" value="1.1.1" />
 	<property name="imagejVersion" value="1.50e" />
 	
 	<echo>
@@ -30,24 +30,6 @@
 		<entry key="imagejVersion" value="${imagejVersion}" />
 	</propertyfile>
 
-
-	<target name="main" depends="compress" description="Main target">
-		<echo>
-		Building the .jar file.
-	</echo>
-	</target>
-	<target name="compress" depends="" description="generate the distribution">
-		<jar jarfile="${pluginName}">
-			<fileset dir="." includes="plugins.config" />
-			<fileset dir="${build}" includes="**/*.*" />
-			<manifest>
-				<attribute name="Built-By" value="${user.name}" />
-			</manifest>
-		</jar>
-		<copy file="${pluginName}" toDir="${pluginsDir}" />
-
-	</target>
-
 	<echo>
 			Copying the files in src.
 	</echo>
@@ -59,5 +41,22 @@
 			<include name="**/*.gif" />
 		</fileset>
 	</copy>
+	
+	<target name="main" depends="compress" description="Main target">
+		<echo>
+		Building the .jar file.
+	</echo>
+	</target>
+	<target name="compress" depends="" description="generate the distribution">
+		<jar jarfile="${pluginName}">
+			<fileset dir="." includes="plugins.config" />
+			<fileset dir="${build}" includes="**/*.*" excludes="**Test**/*.*,**/*test*.*"/>
+			<manifest>
+				<attribute name="Built-By" value="${user.name}" />
+			</manifest>
+		</jar>
+		<copy file="${pluginName}" toDir="${pluginsDir}" />
+
+	</target>
 
 </project>

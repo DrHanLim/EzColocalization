@@ -6,9 +6,9 @@ import ezcol.visual.visual2D.PlotStackWindow;
 import ezcol.visual.visual2D.ScatterPlotGenerator;
 
 
-public class DebugScatterPlot {
+public class TestDebugScatterPlot {
 
-	public DebugScatterPlot()
+	public TestDebugScatterPlot()
 	{test();}
 	
 	public static void test(){

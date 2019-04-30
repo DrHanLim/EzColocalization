@@ -49,7 +49,6 @@ public class MacroHandler extends PluginStatic{
     public static void macroInterpreter(String arg){
     	if(arg==null||arg.length()<=0)
     		return;
-    	
         int start=0, end=0;
         //Check what should be done
         
@@ -318,17 +317,6 @@ public class MacroHandler extends PluginStatic{
 	  	  		}
   			}
   		}
-  		
-  		//hmcolor is used as indicator for generating heat maps
-  		/*for(int iHeat=0;iHeat<whichHeatmap.length;iHeat++){
-  			start = arg.indexOf("heat"+(iHeat+1));
-  			if(start==-1)
-  				whichHeatmap[iHeat] = false;
-  			else{
-  				end = start + ("heat"+(iHeat+1)).length();
-  				whichHeatmap[iHeat] = arg.charAt(end)==' ' && arg.charAt(start-1)==' ';
-  			}
-  		}*/
                 
   		start=arg.indexOf("hmscale=");
   		if(start==-1){
@@ -361,19 +349,6 @@ public class MacroHandler extends PluginStatic{
   	  		}
   		}
   		
-  		/*start=arg.indexOf("tosscale=");
-  		if(start==-1){
-  			mTOSscale = DEFAULT_CHOICE;
-  		}else{
-  			start += ("tosscale=".length());
-	        end=arg.indexOf(" ", start);
-	        if ((arg.charAt(start)+"").equals("[")){
-	            start++;
-	            end=arg.indexOf("]", start);
-	        }
-	        mTOSscale=Arrays.asList(MACRO_TOSOPTS).indexOf(arg.substring(start, end));
-  		}*/
-  		
   		int iFTs = metricThold_radios.length;
   		
   		for(int iMetric=0;iMetric<metricThold_radios.length;iMetric++){
@@ -381,16 +356,16 @@ public class MacroHandler extends PluginStatic{
   			if(start==-1){
   				metricThold_radios[iMetric] = DEFAULT_CHOICE;
   			}else{
-  				start += ("metricTholds"+(iMetric+1)+"=").length();
+  				start += (("metricthold"+(iMetric+1)+"=").length());
 	  	        end=arg.indexOf(" ", start);
 	  	        if ((arg.charAt(start)+"").equals("[")){
 	  	            start++;
 	  	            end=arg.indexOf("]", start);
 	  	        }
 	  	        String thisThold = arg.substring(start, end);
-	  	      metricThold_radios[iMetric] = (int)parseDouble(thisThold);
+  	      		metricThold_radios[iMetric] = Arrays.asList(MACRO_METRIC_THOLDS).indexOf(thisThold);
   			}
-  			if(metricThold_radios[iMetric]==BasicCalculator.THOLD_FT)
+  			if(metricThold_radios[iMetric]==IDX_THOLD_FT)
   				iFTs+=allFT_spins.length;
   		}
   		

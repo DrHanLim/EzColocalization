@@ -14,7 +14,7 @@ import javax.swing.SwingWorker;
 import ezcol.visual.visual2D.ProgressGlassPane;
 import ij.IJ;
 
-public class DebugProgressGlass implements ActionListener {
+public class TestDebugProgressGlass implements ActionListener {
 
 	private int n=10;
 	private JFrame mainframe;
@@ -22,7 +22,7 @@ public class DebugProgressGlass implements ActionListener {
 	private ProgressGlassPane pg;
 	private JButton trial;
 	
-	public DebugProgressGlass(){GUI();}
+	public TestDebugProgressGlass(){GUI();}
 	
 	public void GUI()
 	{

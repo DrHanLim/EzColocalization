@@ -40,7 +40,7 @@ public class FilesIO {
 	public static final String JAVA_VERSION = "javaVersion";
 	public static final String IMAGEJ_VERSION = "imagejVersion";
 
-	private static final String IMAGE_DIRECTORY = "images/";
+	private static final String IMAGE_DIRECTORY = "resources/images/";
 
 	public static URL getResource(String name) {
 		if (name.charAt(0) != '/')
@@ -91,10 +91,15 @@ public class FilesIO {
 			ExceptionHandler.handleException(e);
 			IJ.log(""+e);
 		}
+		boolean hasImg = false;
 		for (String str : strs) {
 			if (isExtension(str, "tif")) {
 				getImagePlus("/" + IMAGE_DIRECTORY + str, show);
+				hasImg = true;
 			}
+		}
+		if (!hasImg){
+			IJ.error("Test images are lost");
 		}
 	}
 

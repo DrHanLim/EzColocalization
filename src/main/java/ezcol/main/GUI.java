@@ -488,7 +488,7 @@ public class GUI extends PluginStatic
 				}
 			});
 			menu.add(menuItem);
-
+			
 			menuString = "Test Images";
 			menuItem = new JMenuItem(menuString);
 			menuItem.getAccessibleContext().setAccessibleDescription(menuString);

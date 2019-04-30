@@ -73,7 +73,7 @@ public class MetricCalculator extends BasicCalculator {
 
 		if (!prepCellData(cellCs, obj))
 			return false;
-
+		
 		if ((options & DO_TOS) != 0)
 			tos = new double[numOfCell][2];
 		else

@@ -107,7 +107,7 @@ public class AnalysisOperator extends PluginStatic {
 			return;
 		ImagePlus tempCurrentImg = WindowManager.getCurrentImage();
 		WindowManager.setTempCurrentImage(null);
-
+		
 		try {
 			if (curFrame == frames) {
 				applyToStack(curFrame);
@@ -180,7 +180,6 @@ public class AnalysisOperator extends PluginStatic {
 				finishStack();
 			}
 		} catch (Exception e) {
-			// System.out.println("thrown");
 			e.printStackTrace();
 			/*
 			 * Debugger.log("************Error**************");

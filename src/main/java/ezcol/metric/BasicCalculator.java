@@ -9,6 +9,7 @@ import java.util.Map;
 
 import ezcol.cell.CellData;
 import ezcol.cell.DataSorter;
+import ezcol.debug.Debugger;
 import ezcol.debug.ExceptionHandler;
 import ezcol.main.PluginConstants;
 
@@ -473,11 +474,6 @@ public abstract class BasicCalculator {
 					sfsCs[i][place] = 1.0;
 		}
 
-		/*
-		 * for(int i=0;i<sfsCs.length;i++){ System.out.print("c"+i+": ");
-		 * for(int j=0;j<sfsCs[i].length;j++){ System.out.print(sfsCs[i][j]+" "
-		 * ); } System.out.println(); }
-		 */
 	}
 
 	/*

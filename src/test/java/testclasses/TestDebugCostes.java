@@ -13,7 +13,7 @@ import ezcol.metric.MetricCalculator;
 import ezcol.visual.visual2D.ScatterPlotGenerator;
 import ij.gui.Plot;
 
-public class DebugCostes {
+public class TestDebugCostes {
 	public static void testPCC(){
 		float[] Aarray = new float[]{1, 4 ,5, 6,7 ,2 ,10, 2};
 		float[] Barray = new float[]{2, 3, 5,10, 2, 0, 3, 3};
@@ -96,7 +96,7 @@ public class DebugCostes {
 		Debugger.print(slowTholds);
 		
 		ScatterPlotGenerator spg = new ScatterPlotGenerator(
-				DebugCostes.class.getSimpleName(), "Channel 1", "Channel 2", 
+				TestDebugCostes.class.getSimpleName(), "Channel 1", "Channel 2", 
 				new float[][]{A3array}, new float[][]{B3array},
 				new String[]{""});
 		//Debugger.print(tmps);
