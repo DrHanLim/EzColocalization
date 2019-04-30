@@ -22,7 +22,6 @@ public class EzColocalization_ implements PlugIn{
 		//ezcol.metric.getJDKpath.getJDKpath_test();
 		//pass the class name to the macrohandler in case of recording
 		PluginStatic.setPlugIn(getClass());
-
 		if (Macro.getOptions()==null){
         	new GUI();
         }
