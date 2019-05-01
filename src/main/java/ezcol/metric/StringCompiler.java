@@ -5,6 +5,8 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.CharArrayReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -104,14 +106,21 @@ public class StringCompiler {
 	 * case
 	 */
 	private JavaFileObject getJavaFileObject() {
-		StringBuilder contents = new StringBuilder(runCode);
 		JavaFileObject so = null;
+		if(runCode == null)
+			return so;
+		StringBuilder contents = new StringBuilder(runCode);
 		try {
 			so = new InMemoryJavaFileObject(className, contents.toString());
 		} catch (Exception exception) {
 			exception.printStackTrace();
+			ExceptionHandler.addException(exception);
 		}
 		return so;
+	}
+	
+	public static String getDefaultPath(){
+		return classOutputFolder + className + ".java";
 	}
 
 	public boolean compileCustom() throws Exception {
@@ -125,7 +134,7 @@ public class StringCompiler {
 		// get system compiler:
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 		if (compiler == null) {
-			String path = classOutputFolder + className + ".java";
+			String path = getDefaultPath();
 			compiled = true;
 			compiled = compiled && save(path);
 			compiled = compiled && compileNotRun(path);
@@ -141,7 +150,7 @@ public class StringCompiler {
 			// specify classes output folder
 			Iterable<String> options = Arrays.asList("-d", classOutputFolder);
 			JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, c, options, null, files);
-
+			
 			Boolean result = task.call();
 
 			if (result == true) {
@@ -165,6 +174,7 @@ public class StringCompiler {
 		// containing the class file
 
 		file = new File(classOutputFolder);
+		
 		try {
 			// Convert File to a URL
 			URL url = file.toURI().toURL(); // file:/classes/demo
@@ -177,12 +187,11 @@ public class StringCompiler {
 			// Load in the class; Class.childclass should be located in
 			// the directory file:/class/demo/
 			thisClass = loader.loadClass(className);
-
 			instance = thisClass.newInstance();
 			return true;
 		} catch (InstantiationException | IllegalAccessException | ClassNotFoundException | MalformedURLException e) {
 			// TODO Auto-generated catch block
-			// e.printStackTrace();
+			e.printStackTrace();
 			ExceptionHandler.handleException(e);
 		}
 		return false;
@@ -262,8 +271,7 @@ public class StringCompiler {
 			return returnedObj;
 		} catch (Exception ex) {
 			file.delete();
-			for (StackTraceElement ste : ex.getStackTrace())
-				ExceptionHandler.addError(ste.toString());
+			ExceptionHandler.addException(ex);
 			return null;
 		}
 	}
@@ -288,6 +296,9 @@ public class StringCompiler {
 
 	public void setCode(String runCode) {
 		this.runCode = runCode;
+		if(this.runCode.equals("")){
+			this.runCode="[empty]";
+		}
 	}
 
 	public String getCode() {
@@ -350,14 +361,15 @@ public class StringCompiler {
 	}
 
 	// This method is copied from ij.plugin.frame.Editor
-	boolean save(String path) {
-
+	public boolean save(String path) {
 		File f = new File(path);
 		if (f.exists() && !f.canWrite()) {
 			IJ.showMessage("Editor", "Unable to save because file is write-protected. \n \n" + path);
 			return false;
 		}
 		String text = runCode;
+		if(text == null)
+			return false;
 		char[] chars = new char[text.length()];
 		text.getChars(0, text.length(), chars, 0);
 		try {
@@ -522,7 +534,6 @@ public class StringCompiler {
 
 		boolean errors = true;
 		String s = "not compiled";
-		System.out.println(compilerTool);
 		if (compilerTool != null) {
 			final StringWriter outputWriter = new StringWriter();
 			errors = !compilerTool.compile(sources, options, outputWriter);
@@ -585,6 +596,31 @@ public class StringCompiler {
 		if (errors != null)
 			errors.display("Errors", s);
 		IJ.showStatus("done (errors)");
+	}
+	
+	// open the .java source file and return its content
+	public static String open(String path){
+		File f = new File(path);
+		if (f.exists() && !f.canRead()) {
+			IJ.showMessage("Editor", "Unable to read because file is read-protected. \n \n" + path);
+			return "";
+		}
+		String text = "";
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(path));
+			while (true) {
+				String s = br.readLine();
+				if (s == null)
+					break;
+				text += s + "\n";
+			}
+			br.close();
+			// IJ.showStatus(text.length()+" chars saved to " + path);
+			// changes = false;
+		} catch (IOException e) {
+			ExceptionHandler.addError(Thread.currentThread(), "Cannot find the source file for custom code");
+		}
+		return text;
 	}
 
 	// open the .java source file

@@ -6,6 +6,7 @@ import java.util.Hashtable;
 
 import ezcol.debug.Debugger;
 import ezcol.metric.BasicCalculator;
+import ezcol.metric.StringCompiler;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.Menus;
@@ -82,7 +83,7 @@ public class MacroHandler extends PluginStatic{
     	if(start>=arg.length())
     		return;
     	else
-    		arg=arg.substring(start,arg.length());
+    		arg = arg.substring(start,arg.length());
     	
     	//Macro.getOptions() adds a space after the string before returning it
     	if(arg.charAt(arg.length()-1)!=' ')
@@ -91,10 +92,6 @@ public class MacroHandler extends PluginStatic{
     	if(arg.charAt(0)!=' ')
     		arg = " " + arg;
     	
-        //DIYcode is not included in macro because of its length and sophistication
-    	//DIYcode=customCode.getText();
-    	//doCustom is always false in macro
-    	custom_chck = false;
     	
     	for(int iColumn=0;iColumn<metric_chckes.length;iColumn++){
     		start = arg.indexOf(MACRO_METRICNAMES[iColumn]);
@@ -117,19 +114,23 @@ public class MacroHandler extends PluginStatic{
   			}
   			anyOtherMetric |= other_chckes[iColumn];
   		}
-		
-    	//alignthold is used for indicating alignment
-    	/*
-        for(int iAlign=0;iAlign<whichAligns.length;iAlign++){
-    		start = arg.indexOf("align"+(iAlign+1));
-  			if(start==-1)
-  				whichAligns[iAlign] = false;
-  			else{
-  				end = start + ("align"+(iAlign+1)).length();
-  				whichAligns[iAlign] = arg.charAt(end)==' ' && arg.charAt(start-1)==' ';
-  			}
-  		}
-        */
+    	
+    	if(other_chckes[CUSTOM]){
+    		custom_chck = true;
+    		start=arg.indexOf("custom-javafile=");
+    		if(start==-1){
+    			customCode_text = "";
+    		}else{
+		    	start += ("custom-javafile=").length();
+		        end=arg.indexOf(" ", start);
+		        if ((arg.charAt(start)+"").equals("[")){
+		            start++;
+		            end=arg.indexOf("]", start);
+		        }
+		    	String path=arg.substring(start, end);
+		    	customCode_text = StringCompiler.open(path);
+    		}
+    	}
     	
         for(int iThold=0;iThold<alignThold_combs.length;iThold++){
         	start=arg.indexOf("alignthold"+(iThold+1)+"=");
@@ -585,42 +586,23 @@ public class MacroHandler extends PluginStatic{
 	  			Recorder.recordOption("mft"+(iFT+1),""+matrixFT_spin[iFT]);
 	  		}
         }
-  		
-        /*if((options&RUN_TOS)!=0){
-	  		Recorder.recordOption("tosscale",MACRO_TOSOPTS[mTOSscale]);
-	  		
-	  		for(int iTOS=0;iTOS<numOfFTs.length;iTOS++)
-	  			Recorder.recordOption("ft"+(iTOS+1),""+numOfFTs[iTOS]);
-        }
-  		
-        if((options&RUN_DIST)!=0){
-	  		switch(whichDist){
-		  		case DIST_THOLD:
-		  			for(int iDist=0;iDist<numOfDistFTs.length;iDist++)
-		  	  			Recorder.recordOption("distft"+(iDist+1),""+numOfDistFTs[iDist]);
-		  			break;
-		  		case DIST_FT:
-		  			for(int iThold=0;iThold<whichDistTholds.length;iThold++)
-		  	        	Recorder.recordOption("distthold"+(iThold+1),MACRO_ALLDISTTHOLDS[whichDistTholds[iThold]]);
-		  			break;
-	  			default:
-	  				break;
-	  		}
-    	}
-    	*/
         
-        
+        int recordChannel = nReporters < allFT_spins.length ? nReporters : allFT_spins.length;
         for(int iMetric=0;iMetric<metric_chckes.length;iMetric++)
         	if(metric_chckes[iMetric]){
 				Recorder.recordOption(MACRO_METRICNAMES[iMetric]);
-				Recorder.recordOption("metricthold"+(iMetric+1),MACRO_METRIC_THOLDS[metricThold_radios[iMetric]]);
-				for(int iChannel=0;iChannel<allFT_spins.length;iChannel++)
+				Recorder.recordOption("metricthold"+(iMetric+1),MACRO_METRIC_THOLDS[metricThold_radios[iMetric]]);		
+				for(int iChannel=0;iChannel<recordChannel;iChannel++)
 					Recorder.recordOption("allft-c"+(iChannel+1)+"-"+(iMetric+1),""+allFT_spins[iChannel][iMetric]);
         	}
         
         for(int iColumn=0;iColumn<other_chckes.length;iColumn++)
         	if(other_chckes[iColumn])
 				Recorder.recordOption(MACRO_OTHERNAMES[iColumn]);
+        
+        if(other_chckes[CUSTOM]){
+        	Recorder.recordPath("custom-javafile", StringCompiler.getDefaultPath());
+        }
   		
   		for(int iColumn=0;iColumn<outputMetric_chckes.length;iColumn++)
         	if(outputMetric_chckes[iColumn])
@@ -700,5 +682,4 @@ public class MacroHandler extends PluginStatic{
     	 
     	 return saveOrClose;
     }
-
 }

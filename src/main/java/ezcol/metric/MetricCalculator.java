@@ -267,12 +267,13 @@ public class MetricCalculator extends BasicCalculator {
 			if (custom != null) {
 				this.cellCs = allCs;
 				custom[iCell] = getCustom(getCellPixels(iCell));
-
-				for (int i = 0; i < custom[iCell].length; i++) {
-					if (Double.isNaN(custom[iCell][i])) {
-						ExceptionHandler.addWarning(Thread.currentThread(), cellCs[0][iCell].getLabel() + " (size:"
-								+ cellCs[0][iCell].length() + ") returns a Custom value(s) of NaN");
-						break;
+				if(custom[iCell]!=null){
+					for (int i = 0; i < custom[iCell].length; i++) {
+						if (Double.isNaN(custom[iCell][i])) {
+							ExceptionHandler.addWarning(Thread.currentThread(), cellCs[0][iCell].getLabel() + " (size:"
+									+ cellCs[0][iCell].length() + ") returns a Custom value(s) of NaN");
+							break;
+						}
 					}
 				}
 			}
@@ -559,7 +560,7 @@ public class MetricCalculator extends BasicCalculator {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			ExceptionHandler.handleException(e);;
+			ExceptionHandler.addException(e);;
 			return null;
 		}
 		return null;

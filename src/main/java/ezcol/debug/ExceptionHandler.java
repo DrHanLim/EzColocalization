@@ -72,6 +72,15 @@ public class ExceptionHandler implements PluginConstants {
 	public void uncaughtException(Thread th, Throwable ex) {
 		threadException.uncaughtException(th, ex);
 	}
+	
+	public static synchronized void addException(Exception ex) {
+		addStackTraceElements(ex.getStackTrace());
+	}
+	
+	public static synchronized void addStackTraceElements(StackTraceElement[] stes) {
+		for (StackTraceElement ste : stes)
+			ExceptionHandler.addError(ste.toString());
+	}
 
 	public static synchronized void addError(String str) {
 		if (synSet.contains(str))

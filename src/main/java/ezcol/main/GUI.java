@@ -1944,7 +1944,6 @@ public class GUI extends PluginStatic
 			 * imgd3TOS.removeAllItems(); imgd3TOS.addItem(NOIMAGE); }
 			 */
 		}
-		// System.out.println("----------");
 		// RGB and 8-bit color images are not taken into account
 		if (WindowManager.getImageCount() != 0) {
 			nbImgs = 0;

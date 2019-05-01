@@ -129,7 +129,7 @@ public class AnalysisOperator extends PluginStatic {
 								applyToStack(iFrame);
 							} catch (Exception e) {
 								e.printStackTrace();
-								ExceptionHandler.handleException(e);
+								ExceptionHandler.addException(e);
 							}
 							// Store them in the 'chunks' list
 							publish(iFrame);
@@ -1015,15 +1015,24 @@ public class AnalysisOperator extends PluginStatic {
 
 	public void prepCustom() {
 
-		if (!IJ.isMacro() && (options & DO_CUSTOM) != 0) {
+		// In version 1.1.1 custom code will be read from a file
+		if ((options & DO_CUSTOM) != 0) {
 			customCompiler = new StringCompiler();
+			/*if (!IJ.isMacro()){
+				customCompiler.setCode(customCode_text);
+				customCompiler.save(StringCompiler.getDefaultPath());
+			}*/
 			try {
 				if (customCompiler.compileCustom(customCode_text)) {
-					gui.setCustomStatus(GUI.SUCCESS);
+					if (!IJ.isMacro())
+						gui.setCustomStatus(GUI.SUCCESS);
 				} else {
-					gui.setCustomStatus(GUI.FAILURE);
+					if (!IJ.isMacro())
+						gui.setCustomStatus(GUI.FAILURE);
 					customCompiler = null;
 				}
+				// save the source file .java regardless of failure
+				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

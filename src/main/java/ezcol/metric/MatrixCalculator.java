@@ -369,20 +369,6 @@ public class MatrixCalculator extends BasicCalculator {
 				if (selection1 == 0 && selection2 == sfsCs[1].length - 1) {
 					;
 				}
-				// System.out.println("s1: "+selection1+", s2:
-				// "+selection2+"positiveA: "+positiveA+", positiveB:
-				// "+positiveB);
-
-				/*
-				 * Vector<Double> metrics = new Vector<Double>();
-				 * for(BasicCalculator callbase : callBases){ double[] temp =
-				 * callbase.calMetric(trimA, trimB); if(temp!=null){ for(int
-				 * i=0;i<temp.length;i++) metrics.add(temp[i]); } } double[]
-				 * metricDouble = new double[metrics.size()]; for(int
-				 * i=0;i<metricDouble.length;i++) metricDouble[i] =
-				 * metrics.get(i);
-				 */
-
 				double metricDouble = calMetric(trimA, trimB, show_idx, sfsCs[0][selection1] >= 1.0,
 						sfsCs[1][selection2] >= 1.0);
 
