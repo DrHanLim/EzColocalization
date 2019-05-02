@@ -107,7 +107,7 @@ public class StringCompiler {
 	 */
 	private JavaFileObject getJavaFileObject() {
 		JavaFileObject so = null;
-		if(runCode == null)
+		if(runCode == null || runCode.equals(""))
 			return so;
 		StringBuilder contents = new StringBuilder(runCode);
 		try {
@@ -122,6 +122,37 @@ public class StringCompiler {
 	public static String getDefaultPath(){
 		return classOutputFolder + className + ".java";
 	}
+	
+	/*public static boolean isAdmin() {
+		if (Platform.isMac()) {
+	        try {
+	            Process p = Runtime.getRuntime().exec("id -Gn");
+	            InputStream is = p.getInputStream();
+	            InputStreamReader isr = new InputStreamReader(is, StandardCharsets.US_ASCII);
+	            BufferedReader br = new BufferedReader(isr);
+	            p.waitFor();
+	            int exitValue = p.exitValue();
+	            String exitLine = br.readLine();
+	            if (exitValue != 0 || exitLine == null || exitLine.isEmpty()) {
+	                HandleError..
+	                return false;
+	            }
+	            if (exitLine.matches(".*\\badmin\\b.*")) {
+	                return true;
+	            }
+	            return false;
+	        } catch (IOException | InterruptedException e) {
+	            //HandleError..
+	        }
+	    }else{
+		    String groups[] = (new com.sun.security.auth.module.NTSystem()).getGroupIDs();
+		    for (String group : groups) {
+		        if (group.equals("S-1-5-32-544"))
+		            return true;
+		    }
+	    }
+	    return false;
+	}*/
 
 	public boolean compileCustom() throws Exception {
 		compiled = false;
@@ -133,7 +164,7 @@ public class StringCompiler {
 		// 2.Compile your files by JavaCompiler as foll
 		// get system compiler:
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-		if (compiler == null) {
+		if (compiler == null || true) {
 			String path = getDefaultPath();
 			compiled = true;
 			compiled = compiled && save(path);
@@ -141,7 +172,6 @@ public class StringCompiler {
 			compiled = compiled && preExecute();
 			return compiled;
 		} else {
-
 			// for compilation diagnostic message processing on compilation
 			// WARNING/ERROR
 			MyDiagnosticListener c = new MyDiagnosticListener();
@@ -172,9 +202,7 @@ public class StringCompiler {
 	private boolean preExecute() {
 		// Create a File object on the root of the directory
 		// containing the class file
-
 		file = new File(classOutputFolder);
-		
 		try {
 			// Convert File to a URL
 			URL url = file.toURI().toURL(); // file:/classes/demo
@@ -192,7 +220,7 @@ public class StringCompiler {
 		} catch (InstantiationException | IllegalAccessException | ClassNotFoundException | MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			ExceptionHandler.handleException(e);
+			ExceptionHandler.addException(e);
 		}
 		return false;
 	}
@@ -296,9 +324,6 @@ public class StringCompiler {
 
 	public void setCode(String runCode) {
 		this.runCode = runCode;
-		if(this.runCode.equals("")){
-			this.runCode="[empty]";
-		}
 	}
 
 	public String getCode() {
@@ -368,6 +393,8 @@ public class StringCompiler {
 			return false;
 		}
 		String text = runCode;
+		if(text.equals(""))
+			text = null;
 		if(text == null)
 			return false;
 		char[] chars = new char[text.length()];
@@ -387,6 +414,7 @@ public class StringCompiler {
 			// IJ.showStatus(text.length()+" chars saved to " + path);
 			// changes = false;
 		} catch (IOException e) {
+			ExceptionHandler.addException(e);
 		}
 		return false;
 	}
@@ -543,7 +571,8 @@ public class StringCompiler {
 		}
 
 		if (errors)
-			showErrors(s);
+			ExceptionHandler.addError(s);
+			//showErrors(s);
 		else
 			IJ.showStatus("done");
 		return !errors;
@@ -795,12 +824,13 @@ abstract class CompilerTool {
 				
 				Method call = task.getClass().getMethod("call", new Class[0]);
 				Object result = call.invoke(task, new Object[0]);
-				
 				return Boolean.TRUE.equals(result);
 			} catch (Exception e) {
-				PrintWriter printer = new PrintWriter(log);
-				e.printStackTrace(printer);
-				printer.flush();
+				//PrintWriter printer = new PrintWriter(log);
+				//e.printStackTrace(printer);
+				//printer.flush();
+				e.printStackTrace();
+				ExceptionHandler.addException(e);
 			}
 			return false;
 		}
@@ -845,9 +875,11 @@ abstract class CompilerTool {
 				PrintWriter printer = new PrintWriter(log);
 				Object result = compile.invoke(javac, new Object[] { args, printer });
 				printer.flush();
-				return Integer.valueOf(0).equals(result) | areErrors(log.toString());
+				return Integer.valueOf(0).equals(result) | !areErrors(log.toString());
 			} catch (Exception e) {
-				e.printStackTrace(new PrintWriter(log));
+				//e.printStackTrace(new PrintWriter(log));
+				e.printStackTrace();
+				ExceptionHandler.addException(e);
 			}
 			return false;
 		}
@@ -860,12 +892,12 @@ abstract class CompilerTool {
 	}
 
 	public static CompilerTool getDefault() {
-		CompilerTool javax = new JavaxCompilerTool();
+		/*CompilerTool javax = new JavaxCompilerTool();
 		if (javax.isSupported()) {
 			if (IJ.debugMode)
 				IJ.log("javac: using javax.tool.JavaCompiler");
 			return javax;
-		}
+		}*/
 		CompilerTool legacy = new LegacyCompilerTool();
 		if (legacy.isSupported()) {
 			if (IJ.debugMode)

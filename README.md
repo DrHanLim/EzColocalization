@@ -1,4 +1,4 @@
-# EzColocalization
+﻿# EzColocalization
 
 ## About
 EzColocalization is an open source ImageJ plugin developed to assist in colocalization studies. To allow for its use with as many data types as possible, the program takes a variety of inputs. Details of the possible inputs are available in the EzColocalization publication, but briefly, monochromatic images can be used as reporters, and ROI manager lists, binary masks, and light microscopy images can be used as to identify areas for analysis. This allows images or hand drawn regions for identification of areas to be analyzed. Outputs include everything necessary to visualize data, to decide upon appropriate analysis, to analyze data, and to analyze populations within experiments. EzColocalization is meant to simplify colocalization analysis for experimentalists, however EzColocalization can also be simply be used to identify cells with particular characteristics, align images, analyze colocalization in whole images, and analyze average signal of cells.
@@ -34,7 +34,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 * **Weston Staufer** - *Initial work* - [westonstauffer](https://github.com/westonstauffer)
-* **Huanjie Sheng** - *Initial work* - [david190810](https://github.com/david190810)
+* **Huanjie Sheng** - *Initial work* - [shenghuanjie](https://github.com/shenghuanjie)
 * **Han N. Lim** - *Project design* - [DrHanLim](https://github.com/DrHanLim)
 
 ## License

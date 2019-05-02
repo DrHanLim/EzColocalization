@@ -46,8 +46,10 @@ public class ParticleAnalyzerMT extends ParticleAnalyzer {
 	public void setThreadLineWidth(int lineWidth)
 	{this.lineWidth=lineWidth;}
 	
-	public void setThreadRoiManager(RoiManager roiManager)
-	{this.roiManager=roiManager;}
+	public void setThreadRoiManager(RoiManager roiManager){
+		this.roiManager=roiManager;
+		setRoiManager(roiManager);
+	}
 	
 	public void setThreadResultsTable(ResultsTable rt)
 	{this.rt=rt;}

@@ -50,12 +50,13 @@
 	<target name="compress" depends="" description="generate the distribution">
 		<jar jarfile="${pluginName}">
 			<fileset dir="." includes="plugins.config" />
-			<fileset dir="${build}" includes="**/*.*" excludes="**Test**/*.*,**/*test*.*"/>
+			<fileset dir="${build}" includes="**/*.*" excludes="**test**/*.*, **/*Test*.*"/>
 			<manifest>
 				<attribute name="Built-By" value="${user.name}" />
 			</manifest>
 		</jar>
 		<copy file="${pluginName}" toDir="${pluginsDir}" />
+		<copy file="${pluginName}" toDir="C:/Users/Huanjie Sheng/Desktop/Fiji.app/plugins" />
 
 	</target>
 

@@ -147,31 +147,40 @@ public class CellFinder {
 		}
 	}
 
-	/** use two step intensity based thresholding method to get particles
-	 *  It's interesting that ParticleAnalyzer is robust to LUT and Inverting if it's run twice
+	/**
+	 * use two step intensity based thresholding method to get particles It's
+	 * interesting that ParticleAnalyzer is robust to LUT and Inverting if it's
+	 * run twice
+	 * 
 	 * @param waterShed
 	 */
 	public void getParticles(boolean waterShed) {
 		ImagePlus mask1;
+		ImagePlus tempCurrentImg;
 		rt1 = new ResultsTable();
 		// 2616063 WITHOUT STACK
 		// 4188927 EVERYTHING
-		
+
 		cellParticles1 = new ParticleAnalyzerMT(preAnalysis, measurePhase, rt1, minSize1, maxSize1, minCirc1, maxCirc1);
 		cellParticles1.setHideOutputImage(true);
 		cellParticles1.setHyperstack(mask);
 		// cellParticles1.setThreadResultsTable(rt1);
+		// avoid displaying rois
+		tempCurrentImg = WindowManager.getCurrentImage();
+		WindowManager.setTempCurrentImage(mask);
 		cellParticles1.analyze(mask);
+		WindowManager.setTempCurrentImage(tempCurrentImg);
+
 		mask1 = cellParticles1.getOutputImage();
-		
+
 		if (waterShed) {
 			EDM waterSheded = new EDM();
 			waterSheded.toWatershed(mask1.getProcessor());
 		}
-		
-		if(Prefs.blackBackground)
+
+		if (Prefs.blackBackground)
 			mask1.getProcessor().invert();
-		
+
 		Binary fillHoles = new Binary();
 		fillHoles.setup("fill", mask1);
 		fillHoles.run(mask1.getProcessor());
@@ -187,10 +196,10 @@ public class CellFinder {
 		// cellParticles2.setResultsTable(rt2);
 		// This part has been moved to the main function to keep safe in
 		// parallel programming
-		// ImagePlus tempCurrentImg=WindowManager.getCurrentImage();
-		// WindowManager.setTempCurrentImage(mask1);
+		tempCurrentImg = WindowManager.getCurrentImage();
+		WindowManager.setTempCurrentImage(mask1);
 		cellParticles2.analyze(mask1);
-		// WindowManager.setTempCurrentImage(tempCurrentImg);
+		WindowManager.setTempCurrentImage(tempCurrentImg);
 		// Sometimes ImageJ generate discontinuous numbers in count mask when
 		// doing multithreading
 		// In another word, count mask is not thread safe
@@ -233,7 +242,15 @@ public class CellFinder {
 		ParticleAnalyzerMT analyzer = new ParticleAnalyzerMT(ParticleAnalyzerMT.ADD_TO_MANAGER, 0, null, 0.0,
 				Double.POSITIVE_INFINITY);
 		analyzer.setThreadRoiManager(roiManager);
+
+		// I have to set current image to null to avoid the stupid ImageJ to
+		// open RoiManager
+
+		ImagePlus tempCurrentImg = WindowManager.getCurrentImage();
+		WindowManager.setTempCurrentImage(mask.duplicate());
 		analyzer.analyze(mask.duplicate());
+		WindowManager.setTempCurrentImage(tempCurrentImg);
+
 		Roi[] rois = roiManager.getRoisAsArray();
 
 		ip.resetRoi();
@@ -383,7 +400,8 @@ public class CellFinder {
 										? rtBacks[idxChannel].getValue(tempName, 0) : 1.0);
 					else
 						background = 1.0;
-					if (metrics[iCell] > filterMax[iFilter] * background || metrics[iCell] < filterMin[iFilter] * background)
+					if (metrics[iCell] > filterMax[iFilter] * background
+							|| metrics[iCell] < filterMin[iFilter] * background)
 						deletedIndex[iCell] = true;
 
 				}

@@ -18,6 +18,7 @@ public class EzColocalization_ implements PlugIn{
 		//IJ.error(System.getProperty("java.home")+"\n"+ToolProvider.getSystemJavaCompiler());
 		//ezcol.metric.getJDKpath.getJDKpath_test();
 		//pass the class name to the macrohandler in case of recording
+		
 		PluginStatic.setPlugIn(getClass());
 		if (Macro.getOptions()==null){
         	new GUI();
@@ -30,6 +31,7 @@ public class EzColocalization_ implements PlugIn{
         	}
         	
         }
+        
 	}
 
 }

@@ -1018,10 +1018,10 @@ public class AnalysisOperator extends PluginStatic {
 		// In version 1.1.1 custom code will be read from a file
 		if ((options & DO_CUSTOM) != 0) {
 			customCompiler = new StringCompiler();
-			/*if (!IJ.isMacro()){
+			if (!IJ.isMacro()){
 				customCompiler.setCode(customCode_text);
 				customCompiler.save(StringCompiler.getDefaultPath());
-			}*/
+			}
 			try {
 				if (customCompiler.compileCustom(customCode_text)) {
 					if (!IJ.isMacro())
@@ -1036,8 +1036,9 @@ public class AnalysisOperator extends PluginStatic {
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-				ExceptionHandler.handleException(e);
+				ExceptionHandler.addException(e);
 			}
+			
 		} else
 			customCompiler = null;
 	}
