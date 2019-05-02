@@ -56,7 +56,6 @@
 			</manifest>
 		</jar>
 		<copy file="${pluginName}" toDir="${pluginsDir}" />
-		<copy file="${pluginName}" toDir="C:/Users/Huanjie Sheng/Desktop/Fiji.app/plugins" />
 
 	</target>
 
