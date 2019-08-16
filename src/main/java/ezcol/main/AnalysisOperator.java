@@ -1105,8 +1105,8 @@ public class AnalysisOperator extends PluginStatic {
 				}
 
 				if (cal != null) {
-					testCalWidth = testCalWidth + cal.pixelWidth + " ";
-					testCalHeight = testCalHeight + cal.pixelHeight + " ";
+					testCalWidth = testCalWidth + cal.pixelWidth + cal.getUnit() + " ";
+					testCalHeight = testCalHeight + cal.pixelHeight + cal.getUnit() + " ";
 				}
 
 				width = imps[i].getWidth();
@@ -1122,30 +1122,30 @@ public class AnalysisOperator extends PluginStatic {
 
 		if (!(isDimensionEqual(testWidth) && isDimensionEqual(testHeight) && isDimensionEqual(testSlice)
 				&& isDimensionEqual(testChannel) && isDimensionEqual(testFrame))) {
-			IJ.error(pluginName + " error", "Stacks' dimensions mismatch");
+			IJ.error(pluginName + " error", "Stacks' dimensions mismatch. Check the dimensions of your images and stacks.");
 			return -1;
 		}
 
 		if (!(isDimensionEqual(testCalWidth) && isDimensionEqual(testCalHeight))) {
-			IJ.error(pluginName + " error", "Scaling factors must be global");
+			IJ.error(pluginName + " error", "Scaling factors must be global. Reset the Scale in Analyze > Set Scale...");
 			return -1;
 		}
 
 		if (frame == -1) {
 			if (type == 0)
-				IJ.error(pluginName + " error", "None of the operations is selected");
+				IJ.error(pluginName + " error", "None of the operations is selected¡£");
 			else
-				ExceptionHandler.addError(Thread.currentThread(), "Unknown error");
+				ExceptionHandler.addError(Thread.currentThread(), "Unknown error. Please contact the authors.");
 			return -1;
 		}
 
 		if (slice != 1) {
-			IJ.error(pluginName + " error", "Input cannot have multiple frames as well as mutiple slices");
+			IJ.error(pluginName + " error", "Input cannot have multiple frames as well as mutiple slices.");
 			return -1;
 		}
 
 		if (channel != 1) {
-			IJ.error(pluginName + " error", "Input cannot have multiple channels");
+			IJ.error(pluginName + " error", "Input cannot have multiple channels.");
 			return -1;
 		}
 

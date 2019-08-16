@@ -196,7 +196,12 @@ public class CellDataProcessor {
 		// numOfPixel = new int[]{chs[0].getPixelCount()};
 		cellCs = new CellData[chs.length][1];
 		for (int i = 0; i < chs.length; i++) {
-			cellCs[i][0] = new CellData(numOfPixel[0]);
+			try{
+				cellCs[i][0] = new CellData(numOfPixel[0]);
+			}
+			catch(Exception ex){
+				ExceptionHandler.addException(ex);
+			}
 			int index = 0;
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
