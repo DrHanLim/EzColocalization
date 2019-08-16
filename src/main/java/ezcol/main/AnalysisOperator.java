@@ -1127,7 +1127,7 @@ public class AnalysisOperator extends PluginStatic {
 		}
 
 		if (!(isDimensionEqual(testCalWidth) && isDimensionEqual(testCalHeight))) {
-			IJ.error(pluginName + " error", "Scaling factors must be global. Reset the Scale in Analyze > Set Scale...");
+			IJ.error(pluginName + " error", "Scaling factors must be consistent/global. Reset the Scale in \"Analyze > Set Scale...\"");
 			return -1;
 		}
 
