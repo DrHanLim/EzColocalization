@@ -68,8 +68,11 @@ public class MacroHandler extends PluginStatic{
 	            }
 	            String imgTitle=arg.substring(start, end);
 	            
-	            if(imgTitle.equals(ImageInfo.ROI_MANAGER))
+	            if(imgTitle.equals(ImageInfo.ROI_MANAGER)){
 					imps[ipic] = roiManager2Mask(temp);
+					// introduced in 1.1.3 force black background when ROI manager is used.
+					lightBacks[ipic] = false;
+	            }
 				else if(imgTitle.equals(ImageInfo.NONE))
 					imps[ipic] = null;
 				else{

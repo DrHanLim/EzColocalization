@@ -78,7 +78,6 @@ public class BackgroundProcessor {
 				setBackgroundOption(isLightBackground());
 			
 			if (srcIp.isBinary()) {
-		
 				ipThold = (ByteProcessor) srcIp.duplicate();
 				if(ipThold.isInvertedLut())
 					ipThold.invertLut();

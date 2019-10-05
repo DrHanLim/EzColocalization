@@ -107,7 +107,7 @@ public class AnalysisOperator extends PluginStatic {
 			return;
 		ImagePlus tempCurrentImg = WindowManager.getCurrentImage();
 		WindowManager.setTempCurrentImage(null);
-		
+
 		try {
 			if (curFrame == frames) {
 				applyToStack(curFrame);
@@ -256,8 +256,8 @@ public class AnalysisOperator extends PluginStatic {
 		ImageProcessor ip = imps[imps.length - 1] == null ? null
 				: imps[imps.length - 1].getStack().getProcessor(iFrame).duplicate();
 		ImageProcessor[] oldips = new ImageProcessor[imps.length - 1];
-		for (int i = 0; i < oldips.length; i++){
-			if(imps[i] == null || imps[i].getStack().getSize() < iFrame)
+		for (int i = 0; i < oldips.length; i++) {
+			if (imps[i] == null || imps[i].getStack().getSize() < iFrame)
 				oldips[i] = null;
 			else
 				oldips[i] = imps[i].getStack().getProcessor(iFrame).duplicate();
@@ -337,7 +337,7 @@ public class AnalysisOperator extends PluginStatic {
 			ByteProcessor ipMask;
 			ipMask = impBackground.thredImp(lightBacks[lightBacks.length - 1]);
 			ipMask.invertLut();
-			if(Prefs.blackBackground)
+			if (Prefs.blackBackground)
 				ipMask.invert();
 
 			impBackground = null;
@@ -394,19 +394,20 @@ public class AnalysisOperator extends PluginStatic {
 				break;
 			}
 			// heatmap module
-			if(heatmapStack != null){
+			if (heatmapStack != null) {
 				HeatGenerator myHeat = new HeatGenerator();
 				for (int iHeat = 0; iHeat < heatmapStack.length; iHeat++)
 					if (heatmapStack != null && heatmapStack[iHeat] != null) {
 						heatmapStack[iHeat].setProcessor(newips[iHeat].duplicate(), iFrame - curFrame + 1);
-						myHeat.heatmap(heatmapStack[iHeat].getProcessor(iFrame - curFrame + 1), tempRoi, tempScalar[iHeat]);
+						myHeat.heatmap(heatmapStack[iHeat].getProcessor(iFrame - curFrame + 1), tempRoi,
+								tempScalar[iHeat]);
 					}
 			}
 		}
 
-		
 		// convert the results from impCells to cellData
 		// always coexist with impCells
+		int cdpStatus = 0;
 		if ((options & RUN_CDP) != 0) {
 			CellDataProcessor cdp = new CellDataProcessor();
 			cdp.setLabel("image " + iFrame);
@@ -416,9 +417,12 @@ public class AnalysisOperator extends PluginStatic {
 				if (newips[i] != null && imps[i] != null)
 					newips[i].setCalibrationTable(imps[i].getStack().getProcessor(iFrame).getCalibrationTable());
 
-			if (!cdp.mask2data(countCells == null ? null : countCells.getProcessor(), newips, true))
+			cdpStatus = cdp.mask2data(countCells == null ? null : countCells.getProcessor(), newips, true);
+			if (cdpStatus == 2)
+				ExceptionHandler.addWarning(Thread.currentThread(), "No cell can be found in cell data processor on slice " + iFrame);
+			else if(cdpStatus == 1)
 				ExceptionHandler.addError(Thread.currentThread(), "Error in cell data processor on slice " + iFrame);
-			
+
 			numOfCell = cdp.getNumOfCell();
 			for (int iC = 0; iC < cellCs.length; iC++) {
 				cellCs[iC] = cdp.getCellData(iC);
@@ -431,7 +435,7 @@ public class AnalysisOperator extends PluginStatic {
 				tempCellTable.incrementCounter();
 		}
 
-		if ((options & RUN_SCATTER) != 0 && cellData!=null) {
+		if ((options & RUN_SCATTER) != 0 && cellData != null) {
 
 			if (numOfCell <= 0)
 				;
@@ -466,14 +470,16 @@ public class AnalysisOperator extends PluginStatic {
 		if ((options & RUN_METRICS) != 0) {
 			callMetric = new MetricCalculator(options, customCompiler);
 			if (!callMetric.calMetrics(cellCs, allTholds))
-				ExceptionHandler.addError(Thread.currentThread(), "Error in calculating metrics on slice " + iFrame);
+				if(cdpStatus!=2)
+					ExceptionHandler.addError(Thread.currentThread(), "Error in calculating metrics on slice " + iFrame);
 		}
 
 		MatrixCalculator callmTOS = null;
-		if ((options & RUN_MATRIX) != 0 && nReporters == 2 && mTOSRTArray!= null) {
+		if ((options & RUN_MATRIX) != 0 && nReporters == 2 && mTOSRTArray != null) {
 			callmTOS = new MatrixCalculator(options, matrixFT_spin);
 			if (!callmTOS.calMetrics(cellCs[0], cellCs[1], matrixMetric_comb))
-				ExceptionHandler.addError(Thread.currentThread(), "Error in calculating mTOS on slice " + iFrame);
+				if(cdpStatus!=2)
+					ExceptionHandler.addError(Thread.currentThread(), "Error in calculating mTOS on slice " + iFrame);
 			mTOSRTArray[iFrame - curFrame] = callmTOS.getResultsTable();
 		}
 
@@ -538,10 +544,10 @@ public class AnalysisOperator extends PluginStatic {
 			ImageStack outMaskStack = new ImageStack(width, height, outputMaskArray.length);
 			for (int iOut = 1; iOut <= outputMaskArray.length; iOut++) {
 				outMaskStack.setSliceLabel("Mask-Shot" + iOut, iOut);
-				if(outputMaskArray[iOut - 1] != null)
+				if (outputMaskArray[iOut - 1] != null)
 					outMaskStack.setProcessor(outputMaskArray[iOut - 1], iOut);
-				else{
-					ExceptionHandler.addError(Thread.currentThread(), "Error in generating sliece " + iOut);
+				else {
+					ExceptionHandler.addError(Thread.currentThread(), "Error in generating slice " + iOut);
 					outMaskStack.setProcessor(new ByteProcessor(width, height), iOut);
 				}
 			}
@@ -551,7 +557,7 @@ public class AnalysisOperator extends PluginStatic {
 				windowTitle = windowTitle + "-" + (index++);
 
 			ImagePlus outMaskImp = new ImagePlus(windowTitle, outMaskStack);
-			if(!Prefs.blackBackground)
+			if (!Prefs.blackBackground)
 				outMaskImp.getProcessor().invertLut();
 			outMaskImp.show();
 			addWindow(outMaskImp);
@@ -559,7 +565,7 @@ public class AnalysisOperator extends PluginStatic {
 
 		if (outputRTArray != null) {
 			outputRT = appendResultsTables(outputRTArray);
-			if (outputRT!= null && outputRT.getCounter() > 0) {
+			if (outputRT != null && outputRT.getCounter() > 0) {
 				if ((options & DO_RESULTTABLE) != 0) {
 					String windowTitle = "Metric(s) of "
 							+ (markedIMG >= 0 ? imps[markedIMG].getTitle() : "selected calculations");
@@ -630,7 +636,7 @@ public class AnalysisOperator extends PluginStatic {
 			}
 		}
 		// end of callmTOS
-		
+
 		if ((options & RUN_SCATTER) != 0 && cellData != null) {
 
 			float[][] xData = new float[cellData.length][];
@@ -662,16 +668,17 @@ public class AnalysisOperator extends PluginStatic {
 				while (WindowManager.getImage(windowTitle) != null)
 					windowTitle = windowTitle + "-" + (index++);
 
-				if(count > 0){
-					ScatterPlotGenerator spg = new ScatterPlotGenerator(windowTitle, "Channel 1", "Channel 2", xData, yData,
-							sliceLabels);
-					// Add Costes thresholds and regression line to current scatter
+				if (count > 0) {
+					ScatterPlotGenerator spg = new ScatterPlotGenerator(windowTitle, "Channel 1", "Channel 2", xData,
+							yData, sliceLabels);
+					// Add Costes thresholds and regression line to current
+					// scatter
 					// plot
 					// This can be done once the scatterplot window is opened.
 					// So it's not done here.
 					// spg.addCostes();
 					spw = spg.show();
-				}else
+				} else
 					spw = null;
 
 			} else {
@@ -694,12 +701,12 @@ public class AnalysisOperator extends PluginStatic {
 				int index = 2;
 				while (WindowManager.getImage(windowTitle) != null)
 					windowTitle = windowTitle + "-" + (index++);
-				
-				if(count > 0){
-					spw = new ScatterPlot3DWindow(windowTitle, "Channel 1", "Channel 2", "Channel 3", xData, yData, zData,
-							Spot3D.CIRCLE + Spot3D.ALL_SHAPES + 1, sliceLabels);
+
+				if (count > 0) {
+					spw = new ScatterPlot3DWindow(windowTitle, "Channel 1", "Channel 2", "Channel 3", xData, yData,
+							zData, Spot3D.CIRCLE + Spot3D.ALL_SHAPES + 1, sliceLabels);
 					((ScatterPlot3DWindow) spw).draw();
-				}else
+				} else
 					spw = null;
 			}
 
@@ -875,7 +882,6 @@ public class AnalysisOperator extends PluginStatic {
 		if (roiManager == null || ip == null)
 			return null;
 		Roi[] rois = roiManager.getRoisAsArray();
-
 		return roi2mask(ip, rois);
 	}
 
@@ -1018,7 +1024,7 @@ public class AnalysisOperator extends PluginStatic {
 		// In version 1.1.1 custom code will be read from a file
 		if ((options & DO_CUSTOM) != 0) {
 			customCompiler = new StringCompiler();
-			if (!IJ.isMacro()){
+			if (!IJ.isMacro()) {
 				customCompiler.setCode(customCode_text);
 				customCompiler.save(StringCompiler.getDefaultPath());
 			}
@@ -1032,13 +1038,13 @@ public class AnalysisOperator extends PluginStatic {
 					customCompiler = null;
 				}
 				// save the source file .java regardless of failure
-				
+
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				ExceptionHandler.addException(e);
 			}
-			
+
 		} else
 			customCompiler = null;
 	}
@@ -1122,12 +1128,14 @@ public class AnalysisOperator extends PluginStatic {
 
 		if (!(isDimensionEqual(testWidth) && isDimensionEqual(testHeight) && isDimensionEqual(testSlice)
 				&& isDimensionEqual(testChannel) && isDimensionEqual(testFrame))) {
-			IJ.error(pluginName + " error", "Stacks' dimensions mismatch. Check the dimensions of your images and stacks.");
+			IJ.error(pluginName + " error",
+					"Stacks' dimensions mismatch. Check the dimensions of your images and stacks.");
 			return -1;
 		}
 
 		if (!(isDimensionEqual(testCalWidth) && isDimensionEqual(testCalHeight))) {
-			IJ.error(pluginName + " error", "Scaling factors must be consistent/global. Reset the Scale in \"Analyze > Set Scale...\"");
+			IJ.error(pluginName + " error",
+					"Scaling factors must be consistent/global. Reset the Scale in \"Analyze > Set Scale...\"");
 			return -1;
 		}
 
@@ -1196,10 +1204,9 @@ public class AnalysisOperator extends PluginStatic {
 
 	/**
 	 * run after preparing(e.g. prepAll()), determine which channel(s) is/are
-	 * required
-	 * 1=channel 1; 2=channel 2; 4=phase contrast
-	 * OR
-	 * 1=channel 1; 2=channel 2; 4=phase contrast; 8=channel 3;
+	 * required 1=channel 1; 2=channel 2; 4=phase contrast OR 1=channel 1;
+	 * 2=channel 2; 4=phase contrast; 8=channel 3;
+	 * 
 	 * @return
 	 */
 	private int whichToCheck() {
@@ -1257,7 +1264,7 @@ public class AnalysisOperator extends PluginStatic {
 		// These were not used as markers, so just to free memory
 		mMetricValues = null;
 		outputRT = null;
-		
+
 		// Add in 1.1.0 to avoid interference between different previews
 		heatmapImp = null;
 		heatmapStack = null;

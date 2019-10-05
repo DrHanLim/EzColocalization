@@ -2561,8 +2561,11 @@ public class GUI extends PluginStatic
 		for (int ipic = 0; ipic < imgCombbxes.length; ipic++) {
 			if (!imgCombbxes[ipic].isEnabled())
 				imps[ipic] = null;
-			else if (imgCombbxes[ipic].getItemAt(imgCombbxes[ipic].getSelectedIndex()).equal(ROIMANAGER_IMAGE))
+			else if (imgCombbxes[ipic].getItemAt(imgCombbxes[ipic].getSelectedIndex()).equal(ROIMANAGER_IMAGE)){
 				imps[ipic] = roiManager2Mask(temp);
+				// introduced in 1.1.3 force black background when ROI manager is used.
+				lightBacks[ipic] = false;
+			}
 			else if (imgCombbxes[ipic].getItemAt(imgCombbxes[ipic].getSelectedIndex()).equal(NOIMAGE))
 				imps[ipic] = null;
 			else {
@@ -3782,8 +3785,13 @@ public class GUI extends PluginStatic
 			if (imgCombbxes[iBack].isVisible())
 				gd.addCheckbox("Light Background (" + imgLabels[iBack] + ")",
 						lightBacks[iBack] != null ? lightBacks[iBack] : false);
-
+		
+		gd.addPanel(new Panel());
+		gd.addCheckbox("Apply ROIs to all slices", doROIall);
+		
 		gd.showDialog();
+		
+		// Retrieve parameters
 		if (gd.wasOKed()) {
 			boolean cache_preBackSub = gd.getNextBoolean();
 			boolean changed = cache_preBackSub != preBackSub;
@@ -3800,16 +3808,18 @@ public class GUI extends PluginStatic
 				updateThr();
 
 			manualBack = gd.getNextBoolean();
-			if (manualBack) {
-				for (int iBack = 0; iBack < lightBacks.length; iBack++)
-					if (imgCombbxes[iBack].isVisible())
+			
+			for (int iBack = 0; iBack < lightBacks.length; iBack++){
+				if (imgCombbxes[iBack].isVisible()){
+					if (manualBack) {
 						lightBacks[iBack] = gd.getNextBoolean();
-			} else {
-				for (int iBack = 0; iBack < lightBacks.length; iBack++)
-					if (imgCombbxes[iBack].isVisible())
+					}else{
 						lightBacks[iBack] = null;
+						gd.getNextBoolean();
+					}
+				}
 			}
-
+			doROIall = gd.getNextBoolean();
 		}
 
 	}

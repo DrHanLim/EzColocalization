@@ -46,24 +46,24 @@ public class CellDataProcessor {
 	 * return true; }
 	 */
 	@Deprecated
-	public boolean mask2data(ImageProcessor cell, ImageProcessor c1, ImageProcessor c2, boolean rank) {
+	public int mask2data(ImageProcessor cell, ImageProcessor c1, ImageProcessor c2, boolean rank) {
 		return mask2data(cell, new ImageProcessor[] { c1, c2 }, rank);
 	}
 
-	public boolean mask2data(ImageProcessor cell, ImageProcessor[] chs, boolean rank) {
+	public int mask2data(ImageProcessor cell, ImageProcessor[] chs, boolean rank) {
 		if (chs == null)
-			return false;
+			return 1;
 
 		ImageProcessor ic = null;
 		for (int i = 0; i < chs.length; i++) {
 			if (chs[i] != null) {
 				if ((ic != null) && (ic.getWidth() != chs[i].getWidth() || ic.getHeight() != chs[i].getHeight()))
-					return false;
+					return 1;
 				ic = chs[i];
 			}
 		}
 		if (ic == null)
-			return false;
+			return 1;
 
 		width = ic.getWidth();
 		height = ic.getHeight();
@@ -81,8 +81,8 @@ public class CellDataProcessor {
 		} else if (countCell == 0){
 			cellCs = null;
 			numOfPixel = null;
-			ExceptionHandler.addError(Thread.currentThread(), "No cell is found based on the selected filters.");
-			return false;
+			ExceptionHandler.addWarning(Thread.currentThread(), "No cell is found based on the selected filters on some slices.\nApply ROIs to all slices in Settings->Parameters->Apply ROIs to all slices.");
+			return 2;
 		} else {
 			iniNumOfPixel();
 			pixelCs = new float[chs.length][][];
@@ -98,7 +98,7 @@ public class CellDataProcessor {
 			}
 		}
 
-		return true;
+		return 0;
 	}
 
 	private int countMask2NumOfCell(ImageProcessor cell) {

@@ -165,6 +165,9 @@ public abstract class PluginStatic implements PluginConstants {
 	static boolean manualBack = DEFAULT_BOOLEAN;
 	static Boolean[] lightBacks = newArray(Boolean.class, (Boolean) null, MAX_NCHANNELS);
 	
+	// Add in 1.1.3 to apply ROIs in ROImanager to all slices
+	static boolean doROIall = DEFAULT_BOOLEAN;
+	
 	// Add in 1.1.0 to store manually selected thresholds
 	static double[][] manualTholds = newArray(ImageProcessor.NO_THRESHOLD, MAX_NCHANNELS, 2);
 	static boolean[] align_chckes = newArray(DEFAULT_BOOLEAN, MAX_NREPORTERS);
@@ -659,7 +662,6 @@ public abstract class PluginStatic implements PluginConstants {
 		}
 
 		Map<Integer, List<Roi>> roiMap = new HashMap<Integer, List<Roi>>();
-
 		for (Roi roi : rois) {
 			List<Roi> list = roiMap.get(roi.getPosition());
 			if (list == null)
@@ -667,12 +669,13 @@ public abstract class PluginStatic implements PluginConstants {
 			list.add(roi);
 			roiMap.put(roi.getPosition(), list);
 		}
-
-		imp = IJ.createHyperStack(ImageInfo.ROI_MANAGER, width, height, nChannels, nSlices, nChannels, 8);
-		ImageStack impStack = imp.getStack();
 		Roi[] allRois = roiMap.get(0) == null ? null : roiMap.get(0).toArray(new Roi[0]);
 
-		if (nSlices != 1 || nFrames != 1 || nChannels != 1) {
+		// Fixed a bug in 1.1.3 the second nChannels should read nFrames
+		imp = IJ.createHyperStack(ImageInfo.ROI_MANAGER, width, height, nChannels, nSlices, nFrames, 8);
+		ImageStack impStack = imp.getStack();
+
+		if (nSlices != 1 || nFrames != 1 || nChannels != 1 && !doROIall) {
 			boolean reporter;
 			reporter = false;
 			if (allRois != null) {
@@ -713,18 +716,23 @@ public abstract class PluginStatic implements PluginConstants {
 			for (int slice = 1; slice <= nSlices; slice++)
 				for (int frame = 1; frame <= nFrames; frame++) {
 					index = (frame - 1) * nChannels * nSlices + (slice - 1) * nChannels + channel;
-					List<Roi> list = roiMap.get(index);
-					if (list != null) {
-						if(allRois!=null){
-							Roi[] thisRois = new Roi[list.size() + allRois.length];
-							System.arraycopy(allRois, 0, thisRois, 0, allRois.length);
-							System.arraycopy(list.toArray(), 0, thisRois, allRois.length, list.size());
-							impStack.setProcessor(roi2mask(impStack.getProcessor(index), thisRois), index);
-						}else{
-							impStack.setProcessor(roi2mask(impStack.getProcessor(index), list.toArray(new Roi[0])), index);
+					if(doROIall){
+						impStack.setProcessor(roi2mask(impStack.getProcessor(index), rois), index);
+					}
+					else{
+						List<Roi> list = roiMap.get(index);
+						if (list != null) {
+							if(allRois!=null){
+								Roi[] thisRois = new Roi[list.size() + allRois.length];
+								System.arraycopy(allRois, 0, thisRois, 0, allRois.length);
+								System.arraycopy(list.toArray(), 0, thisRois, allRois.length, list.size());
+								impStack.setProcessor(roi2mask(impStack.getProcessor(index), thisRois), index);
+							}else{
+								impStack.setProcessor(roi2mask(impStack.getProcessor(index), list.toArray(new Roi[0])), index);
+							}
+						} else {
+							impStack.setProcessor(roi2mask(impStack.getProcessor(index), allRois), index);
 						}
-					} else {
-						impStack.setProcessor(roi2mask(impStack.getProcessor(index), allRois), index);
 					}
 				}
 		imp.setStack(impStack);

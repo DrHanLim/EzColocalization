@@ -160,7 +160,6 @@ public class CellFinder {
 		rt1 = new ResultsTable();
 		// 2616063 WITHOUT STACK
 		// 4188927 EVERYTHING
-
 		cellParticles1 = new ParticleAnalyzerMT(preAnalysis, measurePhase, rt1, minSize1, maxSize1, minCirc1, maxCirc1);
 		cellParticles1.setHideOutputImage(true);
 		cellParticles1.setHyperstack(mask);
