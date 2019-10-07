@@ -47,6 +47,9 @@ This program is distributed in the hope that it will be useful,but WITHOUT ANY W
 [![A demo on YouTube](https://i.imgur.com/d5JzfQx.jpg)](https://www.youtube.com/watch?v=OlXrA3613EE&feature=youtu.be)
 
 ## Citation
+
+Stauffer, Weston, Huanjie Sheng, and Han N. Lim. "EzColocalization: An ImageJ plugin for visualizing and measuring colocalization in cells and organisms." Scientific reports 8.1 (2018): 15764.
+
 @article{stauffer2018ezcolocalization,
   title={EzColocalization: An ImageJ plugin for visualizing and measuring colocalization in cells and organisms},
   author={Stauffer, Weston and Sheng, Huanjie and Lim, Han N},
