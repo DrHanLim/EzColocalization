@@ -832,6 +832,10 @@ public class GUI extends PluginStatic
 						return;
 					@SuppressWarnings("unchecked")
 					JComboBox<ImageInfo> img = (JComboBox<ImageInfo>) e.getSource();
+					// When the JComboBox is disabled, we do not fire itemStateChanged
+					// listener to avoid any dangerous infinite loop
+					if (!img.isEnabled())
+						return;
 					ImageInfo item = (ImageInfo) e.getItem();
 					if (item.ID == ImageInfo.NONE_ID)
 						return;
@@ -2864,7 +2868,14 @@ public class GUI extends PluginStatic
 				}
 				imp.setRoi(roi);
 			}
-			imp.updateAndDraw();
+			// We do not call updateAndDraw since it will notify ImageUpdated listener
+			// Instead, we update the canvas manually
+			// imp.updateAndDraw();
+			ImageWindow impWin = imp.getWindow();
+			if (impWin != null){
+				impWin.getCanvas().setImageUpdated();
+			}
+			imp.draw();
 		}
 		imgUpdate = true;
 	}
