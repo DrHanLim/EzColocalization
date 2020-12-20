@@ -6,8 +6,8 @@
  * To change this template, choose Tools | Template Manager
  * and open the template in the editor.
  */
-
 package ezcol.main;
+
 import java.awt.Component;
 
 import javax.swing.DefaultListCellRenderer;

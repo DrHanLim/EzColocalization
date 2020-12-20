@@ -3,11 +3,9 @@ package ezcol.visual.visual2D;
 import java.awt.*;
 import java.awt.image.*;
 import java.awt.event.*;
+import java.awt.datatransfer.*;
 import java.io.*;
 
-import ezcol.debug.Debugger;
-
-import java.awt.datatransfer.*;
 import ij.*;
 import ij.gui.Roi;
 import ij.gui.RoiListener;

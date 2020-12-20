@@ -1,9 +1,10 @@
+import ij.Macro;
+import ij.plugin.PlugIn;
+
 import ezcol.main.AnalysisOperator;
 import ezcol.main.GUI;
 import ezcol.main.MacroHandler;
 import ezcol.main.PluginStatic;
-import ij.Macro;
-import ij.plugin.PlugIn;
 
 /**
  * This class is put in the default package so that

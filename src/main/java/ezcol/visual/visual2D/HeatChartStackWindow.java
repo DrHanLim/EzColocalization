@@ -18,15 +18,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.awt.event.WindowEvent;
 import java.io.CharArrayWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import ezcol.main.PluginConstants;
-import ezcol.main.PluginStatic;
-import ezcol.metric.BasicCalculator;
-import ezcol.metric.MatrixCalculator;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.Prefs;
@@ -47,6 +42,11 @@ import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 import ij.util.Tools;
+
+import ezcol.main.PluginConstants;
+import ezcol.main.PluginStatic;
+import ezcol.metric.BasicCalculator;
+import ezcol.metric.MatrixCalculator;
 
 @SuppressWarnings("serial")
 public class HeatChartStackWindow extends StackWindow

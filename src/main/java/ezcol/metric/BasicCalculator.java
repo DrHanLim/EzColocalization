@@ -9,7 +9,6 @@ import java.util.Map;
 
 import ezcol.cell.CellData;
 import ezcol.cell.DataSorter;
-import ezcol.debug.Debugger;
 import ezcol.debug.ExceptionHandler;
 import ezcol.main.PluginConstants;
 

@@ -1,23 +1,44 @@
 package ezcol.main;
 
-import ij.IJ;
-import ij.ImageListener;
-import ij.ImagePlus;
-import ij.Prefs;
-import ij.WindowManager;
-import ij.gui.GenericDialog;
-import ij.gui.ImageWindow;
-import ij.gui.Overlay;
-import ij.gui.Roi;
-import ij.io.OpenDialog;
-import ij.plugin.BrowserLauncher;
-import ij.plugin.OverlayLabels;
-import ij.plugin.frame.Recorder;
-import ij.plugin.frame.RoiManager;
-import ij.plugin.frame.ThresholdAdjuster;
-import ij.process.ImageProcessor;
-import ij.util.Java2;
-import ij.process.AutoThresholder.Method;
+import java.awt.GridBagLayout;
+import java.awt.GridBagConstraints;
+import java.awt.Insets;
+import java.awt.Panel;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Color;
+import java.awt.Desktop;
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.SystemColor;
+import java.awt.Toolkit;
+import java.awt.Window;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.awt.event.ActionEvent;
+import java.beans.PropertyChangeListener;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.text.ParseException;
+import java.util.HashMap;
+import java.util.Vector;
+import java.beans.PropertyChangeEvent;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -32,93 +53,26 @@ import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
-
-import java.awt.GridBagLayout;
-import java.awt.GridBagConstraints;
-
-import javax.swing.JRadioButton;
-import javax.swing.JRadioButtonMenuItem;
-import javax.swing.JTabbedPane;
-
-import java.awt.Insets;
-import java.awt.Panel;
-import java.awt.Point;
-import java.awt.Rectangle;
-
 import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComboBox;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
-
-import java.awt.Color;
-import java.awt.Container;
-import java.awt.Desktop;
-import java.awt.Dimension;
-import java.awt.SystemColor;
-import java.awt.Toolkit;
-import java.awt.Window;
-
+import javax.swing.JRadioButton;
+import javax.swing.JRadioButtonMenuItem;
+import javax.swing.JTabbedPane;
+import javax.swing.JButton;
 import javax.swing.JTextField;
-import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.LookAndFeel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-
-import java.awt.GridLayout;
-
 import javax.swing.JTextArea;
-
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.GraphicsConfiguration;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-
-import javax.swing.JButton;
-
-import java.awt.event.ActionListener;
-import java.awt.event.InputEvent;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionAdapter;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-import java.awt.image.ColorModel;
-import java.awt.event.ActionEvent;
-
-import javax.swing.JSlider;
-import javax.swing.JSpinner;
-import javax.swing.JFormattedTextField;
-import javax.swing.AbstractAction;
-import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
-import javax.swing.ComboBoxModel;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.ImageIcon;
-
-import java.beans.PropertyChangeListener;
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.text.DecimalFormat;
-import java.text.ParseException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
-import java.util.Vector;
-import java.beans.PropertyChangeEvent;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
+import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -142,21 +96,41 @@ import javax.swing.text.html.HTMLDocument;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
+import javax.swing.JSpinner;
+import javax.swing.JFormattedTextField;
+import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.ImageIcon;
+
+import ij.IJ;
+import ij.ImageListener;
+import ij.ImagePlus;
+import ij.Prefs;
+import ij.WindowManager;
+import ij.gui.GenericDialog;
+import ij.gui.ImageWindow;
+import ij.gui.Overlay;
+import ij.gui.Roi;
+import ij.io.OpenDialog;
+import ij.plugin.BrowserLauncher;
+import ij.plugin.OverlayLabels;
+import ij.plugin.frame.Recorder;
+import ij.plugin.frame.RoiManager;
+import ij.plugin.frame.ThresholdAdjuster;
+import ij.process.ImageProcessor;
+import ij.util.Java2;
+import ij.process.AutoThresholder.Method;
 
 import ezcol.align.BackgroundProcessor;
 import ezcol.cell.CellFilterDialog;
-import ezcol.cell.CellFinder;
 import ezcol.cell.ParticleAnalyzerMT;
-import ezcol.debug.Debugger;
 import ezcol.debug.ExceptionHandler;
 import ezcol.files.FilesIO;
 import ezcol.metric.BasicCalculator;
 import ezcol.metric.StringCompiler;
 import ezcol.visual.visual2D.ProgressGlassPane;
-
-import javax.swing.event.CaretEvent;
-import javax.swing.event.CaretListener;
-import javax.swing.event.ChangeEvent;
 
 /**
  * 

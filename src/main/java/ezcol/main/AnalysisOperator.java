@@ -8,28 +8,6 @@ import java.util.Random;
 
 import javax.swing.SwingWorker;
 
-import ezcol.align.BackgroundProcessor;
-import ezcol.align.ImageAligner;
-import ezcol.cell.CellData;
-import ezcol.cell.CellDataProcessor;
-import ezcol.cell.CellFinder;
-import ezcol.debug.Debugger;
-import ezcol.debug.ExceptionHandler;
-import ezcol.metric.BasicCalculator;
-import ezcol.metric.CostesThreshold;
-import ezcol.metric.MatrixCalculator3D;
-import ezcol.metric.MatrixCalculator;
-import ezcol.metric.MetricCalculator;
-import ezcol.metric.StringCompiler;
-import ezcol.visual.visual2D.HeatChart;
-import ezcol.visual.visual2D.HeatChartStackWindow;
-import ezcol.visual.visual2D.HeatGenerator;
-import ezcol.visual.visual2D.HistogramGenerator;
-import ezcol.visual.visual2D.OutputWindow;
-import ezcol.visual.visual2D.ProgressGlassPane;
-import ezcol.visual.visual2D.ScatterPlotGenerator;
-import ezcol.visual.visual3D.ScatterPlot3DWindow;
-import ezcol.visual.visual3D.Spot3D;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -44,6 +22,27 @@ import ij.plugin.frame.Recorder;
 import ij.plugin.frame.RoiManager;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
+
+import ezcol.align.BackgroundProcessor;
+import ezcol.align.ImageAligner;
+import ezcol.cell.CellData;
+import ezcol.cell.CellDataProcessor;
+import ezcol.cell.CellFinder;
+import ezcol.debug.ExceptionHandler;
+import ezcol.metric.BasicCalculator;
+import ezcol.metric.MatrixCalculator3D;
+import ezcol.metric.MatrixCalculator;
+import ezcol.metric.MetricCalculator;
+import ezcol.metric.StringCompiler;
+import ezcol.visual.visual2D.HeatChart;
+import ezcol.visual.visual2D.HeatChartStackWindow;
+import ezcol.visual.visual2D.HeatGenerator;
+import ezcol.visual.visual2D.HistogramGenerator;
+import ezcol.visual.visual2D.OutputWindow;
+import ezcol.visual.visual2D.ProgressGlassPane;
+import ezcol.visual.visual2D.ScatterPlotGenerator;
+import ezcol.visual.visual3D.ScatterPlot3DWindow;
+import ezcol.visual.visual3D.Spot3D;
 
 public class AnalysisOperator extends PluginStatic {
 

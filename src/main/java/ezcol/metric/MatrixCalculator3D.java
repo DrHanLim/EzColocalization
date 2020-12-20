@@ -6,17 +6,15 @@ import java.awt.Font;
 import java.util.HashMap;
 import java.util.Map;
 
-import ezcol.cell.CellData;
-import ezcol.cell.DataSorter;
-import ezcol.debug.ExceptionHandler;
-import ezcol.main.PluginConstants;
-import ezcol.main.PluginStatic;
-import ezcol.visual.visual2D.HeatChart;
-import ezcol.visual.visual3D.ScatterPlot3DWindow;
-import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.ImageWindow;
 import ij.measure.ResultsTable;
+
+import ezcol.cell.CellData;
+import ezcol.debug.ExceptionHandler;
+import ezcol.main.PluginConstants;
+import ezcol.visual.visual2D.HeatChart;
+import ezcol.visual.visual3D.ScatterPlot3DWindow;
 
 public class MatrixCalculator3D extends BasicCalculator {
 
