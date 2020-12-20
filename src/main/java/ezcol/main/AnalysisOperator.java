@@ -891,27 +891,25 @@ public class AnalysisOperator extends PluginStatic {
 				roiCells = new RoiManager();
 
 		}
-		boolean is_old_ij = IJ.versionLessThan("1.52j");
+		boolean isOldImageJ = IJ.versionLessThan("1.52f");
 		for (int iFrame = curFrame; iFrame <= frames; iFrame++) {
 			Roi[] printRoi = (Roi[]) saveRois[iFrame - curFrame];
 			for (int iRoi = 0; iRoi < numOfRois[iFrame - curFrame]; iRoi++) {
-				if (is_old_ij){
+				if (isOldImageJ){
 					// This is necessary because roiCells.add will automatically add
-					// a sufix number
+					// a suffix number
 					printRoi[iRoi].setName("image " + iFrame + ": cell");
 					printRoi[iRoi].setPosition(iFrame);
 					roiCells.add(template, printRoi[iRoi], (iRoi + 1));
-					// This line is added to sync with the name in the RoiManager
-					// It will not affect what's in the RoiManager
 					printRoi[iRoi].setName("image " + iFrame + ": cell-" + (iRoi + 1));
 				}else{
-					// Update in 1.1.4. It appears that now ImageJ add a prefix instead of a suffix
-					// We update here accordingly
+					// Update in 1.1.4 where ImageJ updated its API
+					// Now there is no suffix but a prefix added.
+					// We can also control the prefix not to be added by using
+					// a negative index.
 					printRoi[iRoi].setName("image " + iFrame + ": cell " + (iRoi + 1));
 					printRoi[iRoi].setPosition(iFrame);
-					// In the new ImageJ 1.52f or later, 
-					// if index is negative, not suffix or prefix will be added
-					// We can disable this by setting n to be an negative value
+					// We can avoid adding the prefix by setting n to -1
 					roiCells.add(template, printRoi[iRoi], -1);
 				}
 			}
