@@ -2920,6 +2920,7 @@ public class GUI extends PluginStatic
 
 		recorderRecord = Recorder.record;
 		Recorder.record = false;
+		boolean doStack = (e.getModifiers() & ActionEvent.SHIFT_MASK) == 0;
 
 		Object origin = e.getSource();
 		imgUpdate = false;
@@ -2966,14 +2967,14 @@ public class GUI extends PluginStatic
 			retrieveParams();
 			analysis = new AnalysisOperator(this);
 			analysis.prepAll();
-			analysis.execute(((e.getModifiers() & ActionEvent.SHIFT_MASK) != 0) ? false : true);
+			analysis.execute(doStack);
 
 		} else if (origin == previewVisual) {
 			retrieveParams();
 			options &= MASK_VISUAL;
 			analysis = new AnalysisOperator(this);
 			analysis.prepVisual();
-			analysis.execute(((e.getModifiers() & ActionEvent.SHIFT_MASK) != 0) ? false : true);
+			analysis.execute(doStack);
 
 		} else if (origin == previewTholdBtn) {
 			showThold = !showThold;
@@ -2988,7 +2989,7 @@ public class GUI extends PluginStatic
 			options &= MASK_ALIGNMENT;
 			analysis = new AnalysisOperator(this);
 			analysis.prepAlignment();
-			analysis.execute(((e.getModifiers() & ActionEvent.SHIFT_MASK) != 0) ? false : true);
+			analysis.execute(doStack);
 
 		} else if (origin == resetAlignmentBtn) {
 			redoAlignment();

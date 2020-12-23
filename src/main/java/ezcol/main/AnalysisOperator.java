@@ -974,9 +974,10 @@ public class AnalysisOperator extends PluginStatic {
 			for (int ipic = 0; ipic < heatmapStack.length; ipic++) {
 				if (heatmapStack[ipic] == null)
 					continue;
-				for (int iFrame = 1; iFrame <= frames; iFrame++) {
+				ImageStack impStack = imps[ipic].getStack();
+				for (int iFrame = 1; iFrame <= impStack.getSize(); iFrame++) {
 					if (imps[ipic] != null) {
-						ImageProcessor ip = imps[ipic].getStack().getProcessor(iFrame);
+						ImageProcessor ip = impStack.getProcessor(iFrame);
 						if (scalar[ipic][0] > ip.getStatistics().min)
 							scalar[ipic][0] = ip.getStatistics().min;
 						if (scalar[ipic][1] < ip.getStatistics().max)
@@ -1115,7 +1116,7 @@ public class AnalysisOperator extends PluginStatic {
 				slice = imps[i].getNSlices();
 				channel = imps[i].getNChannels();
 				frame = imps[i].getNFrames();
-
+				
 				if (frame == 1) {
 					frame = slice;
 					slice = 1;
