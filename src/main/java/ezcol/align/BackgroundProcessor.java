@@ -1,8 +1,5 @@
 package ezcol.align;
 
-import ezcol.debug.Debugger;
-import ezcol.debug.ExceptionHandler;
-import ezcol.main.PluginStatic;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.measure.Calibration;
@@ -12,10 +9,11 @@ import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
 import ij.process.ShortProcessor;
 import ij.process.AutoThresholder.Method;
-import ij.process.AutoThresholder;
 import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.process.FloatProcessor;
+
+import ezcol.debug.ExceptionHandler;
 
 public class BackgroundProcessor {
 

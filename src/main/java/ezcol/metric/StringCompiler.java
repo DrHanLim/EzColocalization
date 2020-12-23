@@ -5,7 +5,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.CharArrayReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -30,9 +29,6 @@ import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 
-import ezcol.debug.Debugger;
-import ezcol.debug.ExceptionHandler;
-import ezcol.main.PluginStatic;
 import ij.IJ;
 import ij.Menus;
 import ij.Prefs;
@@ -43,6 +39,9 @@ import ij.plugin.PlugIn;
 import ij.plugin.filter.PlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.Editor;
+
+import ezcol.debug.ExceptionHandler;
+import ezcol.main.PluginStatic;
 
 /**
  * Dynamic java class compiler and executer <br>

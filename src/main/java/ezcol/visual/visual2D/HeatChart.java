@@ -21,25 +21,25 @@ package ezcol.visual.visual2D;
 	 */
 
 
-	import java.awt.*;
-	import java.awt.geom.AffineTransform;
-	import java.awt.image.BufferedImage;
-	import java.io.*;
+import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.util.Iterator;
 
-	import java.util.Iterator;
+import javax.imageio.*;
+import javax.imageio.stream.FileImageOutputStream;
 
-	import javax.imageio.*;
-	import javax.imageio.stream.FileImageOutputStream;
+import ij.IJ;
+import ij.ImagePlus;
+import ij.measure.ResultsTable;
+import ij.process.ImageProcessor;
 
 import ezcol.cell.CellData;
 import ezcol.main.PluginConstants;
 import ezcol.main.PluginStatic;
 import ezcol.metric.BasicCalculator;
 import ezcol.metric.MatrixCalculator;
-import ij.IJ;
-import ij.ImagePlus;
-import ij.measure.ResultsTable;
-import ij.process.ImageProcessor;
 
 
 	/**

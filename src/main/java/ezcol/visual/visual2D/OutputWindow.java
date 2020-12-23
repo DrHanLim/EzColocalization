@@ -5,10 +5,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 
-import ezcol.debug.ExceptionHandler;
-import ezcol.main.PluginStatic;
 import ij.IJ;
 import ij.ImagePlus;
+
+import ezcol.debug.ExceptionHandler;
+import ezcol.main.PluginStatic;
 
 public class OutputWindow {
 

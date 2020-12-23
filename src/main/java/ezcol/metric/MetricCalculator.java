@@ -3,11 +3,9 @@ package ezcol.metric;
 import java.util.Arrays;
 
 import ezcol.cell.CellData;
-import ezcol.debug.Debugger;
 import ezcol.debug.ExceptionHandler;
 import ezcol.main.PluginConstants;
 import ezcol.main.PluginStatic;
-import javafx.util.Pair;
 
 public class MetricCalculator extends BasicCalculator {
 

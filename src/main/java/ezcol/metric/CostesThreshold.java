@@ -1,15 +1,9 @@
 package ezcol.metric;
 
 import java.util.ArrayList;
-import java.util.Random;
 
-import ezcol.cell.CellData;
 import ezcol.cell.DataSorter;
-import ezcol.debug.Debugger;
 import ezcol.debug.ExceptionHandler;
-import ezcol.main.PluginConstants;
-import ij.gui.Plot;
-import ij.process.ImageProcessor;
 
 public class CostesThreshold {
 

@@ -3,8 +3,6 @@ package ezcol.visual.visual2D;
 import java.awt.Color;
 import java.awt.image.IndexColorModel;
 
-import ezcol.debug.ExceptionHandler;
-import ezcol.main.ImageInfo;
 import ij.CompositeImage;
 import ij.IJ;
 import ij.ImagePlus;
@@ -17,6 +15,9 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ImageConverter;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
+
+import ezcol.debug.ExceptionHandler;
+import ezcol.main.ImageInfo;
 
 public class HeatGenerator {
 	

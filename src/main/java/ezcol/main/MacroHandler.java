@@ -4,15 +4,14 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Hashtable;
 
-import ezcol.debug.Debugger;
-import ezcol.metric.BasicCalculator;
-import ezcol.metric.StringCompiler;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.Menus;
 import ij.WindowManager;
 import ij.plugin.frame.Recorder;
 
+import ezcol.metric.BasicCalculator;
+import ezcol.metric.StringCompiler;
 
 /**
  * This class contains purely static variables to handle the recording and 

@@ -1,13 +1,12 @@
 package ezcol.visual.visual2D;
 
-import java.awt.Color;
 import java.util.Arrays;
 
-import ezcol.debug.Debugger;
-import ezcol.metric.CostesThreshold;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Plot;
+
+import ezcol.metric.CostesThreshold;
 
 public class ScatterPlotGenerator {
 

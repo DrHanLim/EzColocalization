@@ -4,12 +4,13 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 
+import ij.ImagePlus;
+import ij.measure.ResultsTable;
+
 import ezcol.cell.CellData;
 import ezcol.debug.ExceptionHandler;
 import ezcol.main.PluginConstants;
 import ezcol.visual.visual2D.HeatChart;
-import ij.ImagePlus;
-import ij.measure.ResultsTable;
 
 public class MatrixCalculator extends BasicCalculator {
 

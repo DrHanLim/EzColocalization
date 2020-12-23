@@ -1,16 +1,11 @@
 package ezcol.files;
 
-import java.awt.Image;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Properties;
@@ -18,9 +13,6 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import javax.imageio.ImageIO;
-
-import ezcol.debug.Debugger;
 import ezcol.debug.ExceptionHandler;
 import ezcol.main.PluginStatic;
 import ij.IJ;

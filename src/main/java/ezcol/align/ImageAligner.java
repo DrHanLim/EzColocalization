@@ -11,13 +11,12 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 
-import ezcol.debug.Debugger;
-import ezcol.debug.ExceptionHandler;
-import ezcol.main.PluginStatic;
 import ij.*;
 import ij.gui.GenericDialog;
-//import ij.plugin.PlugIn;
 import ij.process.*;
+
+import ezcol.debug.ExceptionHandler;
+import ezcol.main.PluginStatic;
 
 public class ImageAligner {
 	// this plugin is a highly modified version of the StackReg plugin available

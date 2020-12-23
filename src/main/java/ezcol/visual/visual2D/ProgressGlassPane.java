@@ -53,7 +53,6 @@ import java.util.Random;
 
 import javax.swing.JComponent;
 
-import ezcol.main.PluginStatic;
 
 @SuppressWarnings("serial")
 public class ProgressGlassPane extends JComponent{

@@ -8,28 +8,6 @@ import java.util.Random;
 
 import javax.swing.SwingWorker;
 
-import ezcol.align.BackgroundProcessor;
-import ezcol.align.ImageAligner;
-import ezcol.cell.CellData;
-import ezcol.cell.CellDataProcessor;
-import ezcol.cell.CellFinder;
-import ezcol.debug.Debugger;
-import ezcol.debug.ExceptionHandler;
-import ezcol.metric.BasicCalculator;
-import ezcol.metric.CostesThreshold;
-import ezcol.metric.MatrixCalculator3D;
-import ezcol.metric.MatrixCalculator;
-import ezcol.metric.MetricCalculator;
-import ezcol.metric.StringCompiler;
-import ezcol.visual.visual2D.HeatChart;
-import ezcol.visual.visual2D.HeatChartStackWindow;
-import ezcol.visual.visual2D.HeatGenerator;
-import ezcol.visual.visual2D.HistogramGenerator;
-import ezcol.visual.visual2D.OutputWindow;
-import ezcol.visual.visual2D.ProgressGlassPane;
-import ezcol.visual.visual2D.ScatterPlotGenerator;
-import ezcol.visual.visual3D.ScatterPlot3DWindow;
-import ezcol.visual.visual3D.Spot3D;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -44,6 +22,27 @@ import ij.plugin.frame.Recorder;
 import ij.plugin.frame.RoiManager;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
+
+import ezcol.align.BackgroundProcessor;
+import ezcol.align.ImageAligner;
+import ezcol.cell.CellData;
+import ezcol.cell.CellDataProcessor;
+import ezcol.cell.CellFinder;
+import ezcol.debug.ExceptionHandler;
+import ezcol.metric.BasicCalculator;
+import ezcol.metric.MatrixCalculator3D;
+import ezcol.metric.MatrixCalculator;
+import ezcol.metric.MetricCalculator;
+import ezcol.metric.StringCompiler;
+import ezcol.visual.visual2D.HeatChart;
+import ezcol.visual.visual2D.HeatChartStackWindow;
+import ezcol.visual.visual2D.HeatGenerator;
+import ezcol.visual.visual2D.HistogramGenerator;
+import ezcol.visual.visual2D.OutputWindow;
+import ezcol.visual.visual2D.ProgressGlassPane;
+import ezcol.visual.visual2D.ScatterPlotGenerator;
+import ezcol.visual.visual3D.ScatterPlot3DWindow;
+import ezcol.visual.visual3D.Spot3D;
 
 public class AnalysisOperator extends PluginStatic {
 
@@ -892,15 +891,27 @@ public class AnalysisOperator extends PluginStatic {
 				roiCells = new RoiManager();
 
 		}
+		boolean isOldImageJ = IJ.versionLessThan("1.52f");
 		for (int iFrame = curFrame; iFrame <= frames; iFrame++) {
 			Roi[] printRoi = (Roi[]) saveRois[iFrame - curFrame];
 			for (int iRoi = 0; iRoi < numOfRois[iFrame - curFrame]; iRoi++) {
-				// This is necessary because roiCells.add will automatically add
-				// a sufix number
-				printRoi[iRoi].setName("image " + iFrame + ": cell");
-				printRoi[iRoi].setPosition(iFrame);
-				roiCells.add(template, printRoi[iRoi], (iRoi + 1));
-				printRoi[iRoi].setName("image " + iFrame + ": cell " + (iRoi + 1));
+				if (isOldImageJ){
+					// This is necessary because roiCells.add will automatically add
+					// a suffix number
+					printRoi[iRoi].setName("image " + iFrame + ": cell");
+					printRoi[iRoi].setPosition(iFrame);
+					roiCells.add(template, printRoi[iRoi], (iRoi + 1));
+					printRoi[iRoi].setName("image " + iFrame + ": cell-" + (iRoi + 1));
+				}else{
+					// Update in 1.1.4 where ImageJ updated its API
+					// Now there is no suffix but a prefix added.
+					// We can also control the prefix not to be added by using
+					// a negative index.
+					printRoi[iRoi].setName("image " + iFrame + ": cell " + (iRoi + 1));
+					printRoi[iRoi].setPosition(iFrame);
+					// We can avoid adding the prefix by setting n to -1
+					roiCells.add(template, printRoi[iRoi], -1);
+				}
 			}
 		}
 		template = null;
@@ -963,9 +974,10 @@ public class AnalysisOperator extends PluginStatic {
 			for (int ipic = 0; ipic < heatmapStack.length; ipic++) {
 				if (heatmapStack[ipic] == null)
 					continue;
-				for (int iFrame = 1; iFrame <= frames; iFrame++) {
+				ImageStack impStack = imps[ipic].getStack();
+				for (int iFrame = 1; iFrame <= impStack.getSize(); iFrame++) {
 					if (imps[ipic] != null) {
-						ImageProcessor ip = imps[ipic].getStack().getProcessor(iFrame);
+						ImageProcessor ip = impStack.getProcessor(iFrame);
 						if (scalar[ipic][0] > ip.getStatistics().min)
 							scalar[ipic][0] = ip.getStatistics().min;
 						if (scalar[ipic][1] < ip.getStatistics().max)
@@ -1104,7 +1116,7 @@ public class AnalysisOperator extends PluginStatic {
 				slice = imps[i].getNSlices();
 				channel = imps[i].getNChannels();
 				frame = imps[i].getNFrames();
-
+				
 				if (frame == 1) {
 					frame = slice;
 					slice = 1;

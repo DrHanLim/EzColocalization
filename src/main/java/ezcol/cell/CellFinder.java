@@ -2,9 +2,7 @@ package ezcol.cell;
 
 import java.awt.Color;
 import java.awt.Rectangle;
-import java.util.HashMap;
 
-import ezcol.debug.Debugger;
 import ij.*;
 import ij.gui.Roi;
 import ij.gui.ShapeRoi;
@@ -14,7 +12,6 @@ import ij.measure.ResultsTable;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.filter.Binary;
 import ij.plugin.filter.EDM;
-import ij.plugin.filter.ParticleAnalyzer;
 import ij.plugin.frame.RoiManager;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
@@ -190,6 +187,7 @@ public class CellFinder {
 		cellParticles2.setHideOutputImage(true);
 		if (roiParticles == null)
 			roiParticles = new RoiManager(false);
+
 		cellParticles2.setThreadRoiManager(roiParticles);
 		cellParticles2.setHyperstack(mask1);
 		// cellParticles2.setResultsTable(rt2);
@@ -241,10 +239,8 @@ public class CellFinder {
 		ParticleAnalyzerMT analyzer = new ParticleAnalyzerMT(ParticleAnalyzerMT.ADD_TO_MANAGER, 0, null, 0.0,
 				Double.POSITIVE_INFINITY);
 		analyzer.setThreadRoiManager(roiManager);
-
 		// I have to set current image to null to avoid the stupid ImageJ to
 		// open RoiManager
-
 		ImagePlus tempCurrentImg = WindowManager.getCurrentImage();
 		WindowManager.setTempCurrentImage(mask.duplicate());
 		analyzer.analyze(mask.duplicate());

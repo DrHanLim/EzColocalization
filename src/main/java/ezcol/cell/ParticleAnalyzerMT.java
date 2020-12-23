@@ -22,6 +22,7 @@ import ij.process.ImageStatistics;
 public class ParticleAnalyzerMT extends ParticleAnalyzer {
 
 	private RoiManager roiManager;
+	private RoiManager roiGarbageManager = new RoiManager(false);
 	private int lineWidth = 1;
 	private boolean hyperstack;
 	private boolean showResultsWindow = true;
@@ -47,8 +48,8 @@ public class ParticleAnalyzerMT extends ParticleAnalyzer {
 	{this.lineWidth=lineWidth;}
 	
 	public void setThreadRoiManager(RoiManager roiManager){
-		this.roiManager=roiManager;
-		setRoiManager(roiManager);
+		this.roiManager = roiManager;
+		setRoiManager(roiGarbageManager);
 	}
 	
 	public void setThreadResultsTable(ResultsTable rt)
@@ -112,5 +113,9 @@ public class ParticleAnalyzerMT extends ParticleAnalyzer {
 				roiManager.add(countMask, roi, (int) (iCell + 0.5));
 		}
 		return true;
+	}
+	
+	public void dumpGarbageRois(){
+		roiGarbageManager.reset();
 	}
 }

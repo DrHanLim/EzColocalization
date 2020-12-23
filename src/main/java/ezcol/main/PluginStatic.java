@@ -14,23 +14,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
-import ezcol.cell.CellFinder;
-import ezcol.debug.Debugger;
-import ezcol.debug.ExceptionHandler;
-import ezcol.files.FilesIO;
-import ezcol.metric.MatrixCalculator;
-import ezcol.metric.MatrixCalculator3D;
-import ezcol.metric.StringCompiler;
-import ezcol.visual.visual2D.HeatChartStackWindow;
 import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.Prefs;
 import ij.WindowManager;
 import ij.gui.ImageWindow;
 import ij.gui.Roi;
-import ij.gui.Toolbar;
 import ij.macro.Interpreter;
 import ij.measure.ResultsTable;
 import ij.plugin.frame.Editor;
@@ -42,6 +32,14 @@ import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 import ij.text.TextWindow;
 import ij.util.Tools;
+
+import ezcol.cell.CellFinder;
+import ezcol.debug.ExceptionHandler;
+import ezcol.files.FilesIO;
+import ezcol.metric.MatrixCalculator;
+import ezcol.metric.MatrixCalculator3D;
+import ezcol.metric.StringCompiler;
+import ezcol.visual.visual2D.HeatChartStackWindow;
 
 /**
  * This class contains all parameters needed for GUIframe, MacroHandler, and
